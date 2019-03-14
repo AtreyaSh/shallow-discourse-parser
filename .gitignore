@@ -1,0 +1,5 @@
+# mac specific
+.DS_STORE
+
+# python specific
+*.pyc
