@@ -2,7 +2,7 @@ from train_pickle import *
 import csv
 import sys
 import datetime
-
+# Ported to python 3
 # example for parameter (learning_rate, min_improvement, method are fix in this code)
 parameter = [(0.1, 95, "prelu", "l2", 0.0001, "l1", 0.1), (0.3, 100, "prelu", "l2", 0.0001, "l2", 0.1 ),
 (0.35, 95, "rect:max", "l1", 0.0001, "l1", 0.1), (0.35, 95, "prelu", "l2", 0.0001, "l1", 0.1), 

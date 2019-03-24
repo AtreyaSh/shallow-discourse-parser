@@ -2,14 +2,14 @@
 import json
 import gensim
 import logging
-import climate
-import theanets
+#import climate
+from theanets import theanets
 import numpy as np
 import re
 import collections
 from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, accuracy_score
 import random
-import cPickle
+import pickle
 import os
 
 def start_vectors(counter, parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, 
@@ -20,7 +20,7 @@ def start_vectors(counter, parses_train_filepath, parses_dev_filepath, relations
     # Initalize semantic model (with None data)
     m = gensim.models.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=5*0)
     #m = gensim.models.Doc2Vec(None, size=300, window=8, min_count=3, workers=4, negative=5*0)
-    print "Reading data..."
+    print("Reading data...")
     # Load parse file
     parses = json.load(open(parses_train_filepath))
     parses.update(json.load(open(parses_dev_filepath)))
@@ -30,23 +30,23 @@ def start_vectors(counter, parses_train_filepath, parses_dev_filepath, relations
     all_relations = all_relations_train + all_relations_dev
     # Substitution dictionary for class labels to integers
     label_subst = dict([(y,x) for x,y in enumerate(set([r[0][0] for r in relations]))])
-    print("Label subst", label_subst)
-    print "Build vocabulary..."
+    print(("Label subst", label_subst))
+    print("Build vocabulary...")
     m.build_vocab(RelReader(all_relations))
     #m.build_vocab(ParseReader(parses, docvec=True))
-    print "Reading pre-trained word vectors..."
+    print("Reading pre-trained word vectors...")
     m.intersect_word2vec_format(googlevecs_filepath, binary=True)
-    print "Training segment vectors..."    
+    print("Training segment vectors...")    
     for iter in range(1, 20):
         ## Training of word vectors
         m.alpha = 0.01/(2**iter)
         m.min_alpha = 0.01/(2**(iter+1))
-        print "Vector training iter", iter, m.alpha, m.min_alpha
-        m.train(ParseReader(parses))
+        print("Vector training iter", iter, m.alpha, m.min_alpha)
+        m.train(ParseReader(parses), total_examples = m.corpus_count, epochs=m.epochs)
     if not os.path.exists("pickles"):
         os.makedirs("pickles")
     file = open("pickles/m_"+str(counter)+".py", "wb")
-    cPickle.dump(m, file, protocol=cPickle.HIGHEST_PROTOCOL)
+    pickle.dump(m, file, protocol=pickle.HIGHEST_PROTOCOL)
     file.close()    
     (input_train, output_train) = convert_relations(relations_train, label_subst, m)
     (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
@@ -75,7 +75,7 @@ def train_theanet(counter_vec, counter_nn,method, learning_rate, momentum, decay
     train_accs = []
     valid_accs = []
     
-    exp = theanets.Experiment(theanets.Classifier, layers=(len(input_train[0]), hidden, len(label_subst)), loss='XE')
+    exp = theanets.main.Experiment(theanets.feedforward.Classifier, layers=(len(input_train[0]), hidden, len(label_subst)), loss='XE')
     if weight_lx == "l1":
         if hidden_lx == "l1":
             exp.train(train_data, valid_data, optimize=method,
@@ -116,23 +116,23 @@ def train_theanet(counter_vec, counter_nn,method, learning_rate, momentum, decay
                                             patience=patience)#=5          
     confmx = confusion_matrix(exp.network.predict(test_data[0]), test_data[1])
     acc = float(sum(np.diag(confmx)))/sum(sum(confmx))
-    print "acc original: ", acc
-    print "acc sklear: ", accuracy_score(exp.network.predict(test_data[0]), test_data[1])
+    print("acc original: ", acc)
+    print("acc sklear: ", accuracy_score(exp.network.predict(test_data[0]), test_data[1]))
     report = classification_report(exp.network.predict(test_data[0]),test_data[1])
-    print classification_report(exp.network.predict(test_data[0]),test_data[1]), "\nAverage accuracy:", acc
-    print "Confusion matrix:\n", confmx
+    print(classification_report(exp.network.predict(test_data[0]),test_data[1]), "\nAverage accuracy:", acc)
+    print("Confusion matrix:\n", confmx)
     accs.append(acc)
-    print "Mean accuracy", np.average(accs), np.std(accs)
+    print("Mean accuracy", np.average(accs), np.std(accs))
     train_acc = accuracy_score(exp.network.predict(train_data[0]),train_data[1])
     train_accs.append(train_acc)
-    print "Mean Train-Accuracy", np.average(train_accs), np.std(train_accs)
+    print("Mean Train-Accuracy", np.average(train_accs), np.std(train_accs))
     valid_acc = accuracy_score(exp.network.predict(valid_data[0]),valid_data[1])
     valid_accs.append(valid_acc)
     file = open("pickles/neuralnetwork_"+str(counter_vec)+"_"+str(counter_nn)+"_.save", "wb")
-    cPickle.dump(exp.network, file, protocol=cPickle.HIGHEST_PROTOCOL)
+    pickle.dump(exp.network, file, protocol=pickle.HIGHEST_PROTOCOL)
     file.close()
     file_ls = open("pickles/label_subst_"+str(counter_vec)+"_"+str(counter_nn)+"_.py", "wb")
-    cPickle.dump(label_subst, file_ls, protocol=cPickle.HIGHEST_PROTOCOL)
+    pickle.dump(label_subst, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
     file_ls.close()
     return np.average(accs), np.average(valid_accs), np.average(train_accs)
    
@@ -143,7 +143,7 @@ class RelReader(object):
         self.segs = segs
         self.docvec = docvec
     def __iter__(self):
-        for file, i in zip(self.segs, range(len(self.segs))):
+        for file, i in zip(self.segs, list(range(len(self.segs)))):
             for sub in [0, 1]:
                 doclab = 'SEG_%d.%d' % (i, sub)
                 #if i % 1000 == 0:
@@ -200,7 +200,7 @@ def traverse(tree, node='ROOT-0', depth=0):
 
 def save_vectors(filename, inputs, outputs, label_subst):
     """ Export vector features to text file """
-    lookup = dict([(y,x) for x,y in label_subst.items()])
+    lookup = dict([(y,x) for x,y in list(label_subst.items())])
     f = open(filename, "w")
     for input, output in zip(inputs, outputs):
         f.write((lookup[output] + ' ' + ' '.join(map(str, input)) + '\n').encode('utf-8'))
@@ -243,7 +243,7 @@ def get_token_depths(arg, doc):
 def get_context(rel, doc, context_size=2):
     """ Get tokens from context sentences of arguments """
     pretext, posttext = [], []
-    for context_i in reversed(range(context_size+1)):
+    for context_i in reversed(list(range(context_size+1))):
         _, _, _, sent_i, _ = rel['Arg1']['TokenList'][0]
         for token_i, token in enumerate(doc['sentences'][sent_i-context_i]['words']):
             token, _ = token
@@ -271,7 +271,7 @@ def convert_relations(relations, label_subst, m):
     for i, rel in enumerate(relations):
         senses, arg1, arg2, context = rel
         if i % 1000 == 0:
-            print "Converting relation",i
+            print("Converting relation",i)
         for sense in [senses[0]]:
             avg = np.average([d for t, d in arg1 if d is not None])
             # Get tokens and weights
@@ -280,8 +280,8 @@ def convert_relations(relations, label_subst, m):
             vecs = np.transpose([m[t]*w for t,w in tokens1 if t in m] + [m[t.lower()]*w for t,w in tokens1 if t not in m and t.lower() in m])
             if len(vecs) == 0:
                 vecs = m['a']*0
-            vec1 = np.array(map(np.average, vecs))
-            vec1prod = np.array(map(np.prod, vecs))
+            vec1 = np.array(list(map(np.average, vecs)))
+            vec1prod = np.array(list(map(np.prod, vecs)))
             # Get vectors for tokens in context (before arg1)
             """context1 = np.transpose([m[t] for t in context[0] if t in m] + [m[t.lower()] for t in context[0] if t not in m and t.lower() in m])
             if len(context1) == 0:
@@ -305,8 +305,8 @@ def convert_relations(relations, label_subst, m):
             else:
                 context2avg = np.array(map(np.average, context2))
             """
-            vec2 = np.array(map(np.average, vecs))
-            vec2prod = np.array(map(np.prod, vecs))
+            vec2 = np.array(list(map(np.average, vecs)))
+            vec2prod = np.array(list(map(np.prod, vecs)))
             #max2 = np.array(map(max, vecs))
             #min2 = np.array(map(min, vecs))
             #final = np.concatenate([vec1,max1,min1,vec2,max2,min2])
@@ -317,11 +317,11 @@ def convert_relations(relations, label_subst, m):
             if len(final) == 2*len(m['a']):
                 inputs.append(final)
             else:
-                print "Warning: rel %d has length %d" % (i, len(final))
+                print("Warning: rel %d has length %d" % (i, len(final)))
                 if len(vec1) == 0:
-                    print "arg1", arg1
+                    print("arg1", arg1)
                 if len(vec2) == 0:
-                    print "arg2", arg2
+                    print("arg2", arg2)
                 break
             outputs.append(np.array(label_subst[sense]))
     ## Theanets training from this point on
@@ -340,7 +340,7 @@ def convert_relations_docvec(relations, label_subst, m):
     for i, rel in enumerate(relations):
         senses, arg1, arg2, context = rel
         if i % 1000 == 0:
-            print "Converting relation",i
+            print("Converting relation",i)
         for sense in senses:
             final = np.concatenate([m.docvecs["SEG_%d.0" % i], m.docvecs["SEG_%d.1" % i]])
             if len(final) > 0:
