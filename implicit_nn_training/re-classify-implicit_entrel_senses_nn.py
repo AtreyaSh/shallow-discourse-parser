@@ -1,7 +1,7 @@
 from reader import read_file, convert_relations, read_file_Org, read_file_noSenses, convert_relations_noSenses
 from readPBTD import subst_id_words
 import json
-import cPickle
+import pickle
 import sys
 import os
 
@@ -10,15 +10,15 @@ def test(inputfile, outputfile, parses_file):
 
     #load trained neural network, label_subst, and semantic model (m)
     f1 = open("neuralnetwork_best.pickle", "rb")
-    network = cPickle.load(f1)
+    network = pickle.load(f1)
     f1.close()
     f2 = open("label_subst_best.pickle", "rb")
-    label_subst = cPickle.load(f2)
+    label_subst = pickle.load(f2)
     f2.close()
     with open(parses_file) as p:
         parses = json.load(p)
     f4 = open("m_best.pickle", "rb")
-    m = cPickle.load(f4)
+    m = pickle.load(f4)
     f4.close()
     inputfile_org = inputfile
 
@@ -54,9 +54,9 @@ def test(inputfile, outputfile, parses_file):
     
     #predict senses with network
     predicted_labels = network.predict(test_data[0])   
-    lookup = dict([(y,x) for x,y in label_subst.items()])
+    lookup = dict([(y,x) for x,y in list(label_subst.items())])
     predicted_labels_names = [lookup[i] for i in predicted_labels]
-    print("Length predicted_labels_names list: ", len(predicted_labels_names))
+    print(("Length predicted_labels_names list: ", len(predicted_labels_names)))
 
     #substitute senses
     f = open(inputfile_org, "r")#read from original inputfile (not modified, in case of TokenList Modification)
@@ -98,7 +98,7 @@ def test(inputfile, outputfile, parses_file):
         #for relations-no-senses
         if rel["Type"] == '':#only look at the implicit relations
             if rel["Connective"]["TokenList"]==[]:
-                if predicted_labels_names[counter] == u'EntRel':
+                if predicted_labels_names[counter] == 'EntRel':
                     rel["Type"] = "EntRel"
                 else:
                     rel["Type"] = 'Implicit'#EntRel is also of Tpe 'Implicit'

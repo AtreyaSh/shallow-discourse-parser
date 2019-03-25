@@ -12,7 +12,7 @@ def parses_load(parses_file):
 def get_words_dict(parses_file):
     ''' create a dict with DocID as keys and list of triples (sent_id, token_id, token) for each word as values'''
     data = parses_load(parses_file)
-    wsj_id_list = [i for i in data.keys()]
+    wsj_id_list = [i for i in list(data.keys())]
     docID_words_dict = dict()
     for wsj_id in wsj_id_list:
         tokenlist = []

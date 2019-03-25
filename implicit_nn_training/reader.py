@@ -111,7 +111,7 @@ def get_token_depths(arg, doc):
 def get_context_Org(rel, doc, context_size=2):
     """ Get tokens from context sentences of arguments """
     pretext, posttext = [], []
-    for context_i in reversed(range(context_size+1)):
+    for context_i in reversed(list(range(context_size+1))):
         _, _, _, sent_i, _ = rel['Arg1']['TokenList'][0]
         for token_i, token in enumerate(doc['sentences'][sent_i-context_i]['words']):
             token, _ = token
@@ -134,7 +134,7 @@ def get_context_Org(rel, doc, context_size=2):
 def get_context(rel, doc, context_size=2):
     """ Get tokens from context sentences of arguments """
     pretext, posttext = [], []
-    for context_i in reversed(range(context_size+1)):
+    for context_i in reversed(list(range(context_size+1))):
         if rel['Arg1']['TokenList'] == []:
             pretext.append("")
         else:
@@ -170,7 +170,7 @@ def convert_relations_noSenses(relations, label_subst, m):
     for i, rel in enumerate(relations):
         senses, arg1, arg2, context = rel
         if i % 1000 == 0:
-            print "Converting relation",i
+            print("Converting relation",i)
         avg = np.average([d for t, d in arg1 if d is not None])
         # Get tokens and weights
         tokens1 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg1]
@@ -178,8 +178,8 @@ def convert_relations_noSenses(relations, label_subst, m):
         vecs = np.transpose([m[t]*w for t,w in tokens1 if t in m] + [m[t.lower()]*w for t,w in tokens1 if t not in m and t.lower() in m])
         if len(vecs) == 0:
             vecs = m['a']*0
-        vec1 = np.array(map(np.average, vecs))
-        vec1prod = np.array(map(np.prod, vecs))
+        vec1 = np.array(list(map(np.average, vecs)))
+        vec1prod = np.array(list(map(np.prod, vecs)))
         # Get vectors for tokens in context (before arg1)
         """context1 = np.transpose([m[t] for t in context[0] if t in m] + [m[t.lower()] for t in context[0] if t not in m a$
         if len(context1) == 0:
@@ -214,17 +214,17 @@ def convert_relations_noSenses(relations, label_subst, m):
         else:
            context2avg = np.array(map(np.average, context2))
         """
-        vec2 = np.array(map(np.average, vecs))
-        vec2prod = np.array(map(np.prod, vecs))
+        vec2 = np.array(list(map(np.average, vecs)))
+        vec2prod = np.array(list(map(np.prod, vecs)))
         final = np.concatenate([np.add(vec1prod,vec1), np.add(vec2prod,vec2)])
         if len(final) == 2*len(m['a']):
             inputs.append(final)
         else:
-            print "Warning: rel %d has length %d" % (i, len(final))
+            print("Warning: rel %d has length %d" % (i, len(final)))
             if len(vec1) == 0:
-                print "arg1", arg1
+                print("arg1", arg1)
             if len(vec2) == 0:
-                print "arg2", arg2
+                print("arg2", arg2)
             break
     inputs = np.array(inputs)
     inputs = inputs.astype(np.float32)
@@ -241,7 +241,7 @@ def convert_relations(relations, label_subst, m):
     for i, rel in enumerate(relations):
         senses, arg1, arg2, context = rel
         if i % 1000 == 0:
-            print "Converting relation",i
+            print("Converting relation",i)
         for sense in [senses[0]]:
             avg = np.average([d for t, d in arg1 if d is not None])
             # Get tokens and weights
@@ -250,8 +250,8 @@ def convert_relations(relations, label_subst, m):
             vecs = np.transpose([m[t]*w for t,w in tokens1 if t in m] + [m[t.lower()]*w for t,w in tokens1 if t not in m and t.lower() in m])
             if len(vecs) == 0:
                 vecs = m['a']*0
-            vec1 = np.array(map(np.average, vecs))
-            vec1prod = np.array(map(np.prod, vecs))
+            vec1 = np.array(list(map(np.average, vecs)))
+            vec1prod = np.array(list(map(np.prod, vecs)))
             # Get vectors for tokens in context (before arg1)
             """context1 = np.transpose([m[t] for t in context[0] if t in m] + [m[t.lower()] for t in context[0] if t not in m and t.lower() in m])
             if len(context1) == 0:
@@ -273,17 +273,17 @@ def convert_relations(relations, label_subst, m):
             else:
                 context2avg = np.array(map(np.average, context2))
             """
-            vec2 = np.array(map(np.average, vecs))
-            vec2prod = np.array(map(np.prod, vecs))
+            vec2 = np.array(list(map(np.average, vecs)))
+            vec2prod = np.array(list(map(np.prod, vecs)))
             final = np.concatenate([np.add(vec1prod,vec1), np.add(vec2prod,vec2)])
             if len(final) == 2*len(m['a']):
                 inputs.append(final)
             else:
-                print "Warning: rel %d has length %d" % (i, len(final))
+                print("Warning: rel %d has length %d" % (i, len(final)))
                 if len(vec1) == 0:
-                    print "arg1", arg1
+                    print("arg1", arg1)
                 if len(vec2) == 0:
-                    print "arg2", arg2
+                    print("arg2", arg2)
                 break
             outputs.append(np.array(label_subst[sense]))
     inputs = np.array(inputs)
@@ -301,7 +301,7 @@ def convert_relations_docvec(relations, label_subst, m):
     for i, rel in enumerate(relations):
         senses, arg1, arg2, context = rel
         if i % 1000 == 0:
-            print "Converting relation",i
+            print("Converting relation",i)
         for sense in senses:
             final = np.concatenate([m.docvecs["SEG_%d.0" % i], m.docvecs["SEG_%d.1" % i]])
             if len(final) > 0:
