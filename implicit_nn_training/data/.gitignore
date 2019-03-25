@@ -1,0 +1,9 @@
+# pdtb files
+en.blind-test/
+en.test/
+en.dev/
+en.train/
+GoogleNews-vectors-negative300.bin
+
+# mac-os
+__MACOSX/

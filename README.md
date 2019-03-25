@@ -1,3 +1,7 @@
+# Further work on Frankfurt Shallow Discourse Parser
+
+This project is a fork of the official Frankfurt Shallow Discourse Parser and involves building/experimenting on implicit sense labelling components. Development is underway.
+
 The Frankfurt Shallow Discourse Parser
 ====================================
 
