@@ -1,0 +1,5 @@
+numpy==1.16.2
+gensim==3.7.1
+theanets.egg==info
+scikit_learn==0.20.3
+theanets==0.7.3

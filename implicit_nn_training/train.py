@@ -7,13 +7,11 @@ import theanets
 import numpy as np
 import re
 import collections
-from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, accuracy_score
-import random
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
 def start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath,
                   googlevecs_filepath):
     """ train vectors """
-    mean = (lambda x: sum(x)/float(len(x)))
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
     # Initalize semantic model (with None data)
     m = gensim.models.Word2Vec(None, size=300, window=8, min_count=3, workers=4)
@@ -111,7 +109,6 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     acc = float(sum(np.diag(confmx)))/sum(sum(confmx))
     print(("acc original: ", acc))
     print(("acc sklear: ", accuracy_score(exp.network.predict(test_data[0]), test_data[1])))
-    report = classification_report(exp.network.predict(test_data[0]),test_data[1])
     print((classification_report(exp.network.predict(test_data[0]),test_data[1]), "\nAverage accuracy:", acc))
     print(("Confusion matrix:\n", confmx))
     accs.append(acc)
@@ -131,7 +128,7 @@ class RelReader(object):
     def __iter__(self):
         for file, i in zip(self.segs, list(range(len(self.segs)))):
             for sub in [0, 1]:
-                doclab = 'SEG_%d.%d' % (i, sub)
+                # doclab = 'SEG_%d.%d' % (i, sub)
                 #if i % 1000 == 0:
                     #print "      Reading", doclab
                 text = [token for token, _ in self.segs[i][sub+1]]
@@ -243,14 +240,14 @@ def get_context(rel, doc, context_size=2):
 def convert_relations(relations, label_subst, m):
     inputs = []
     outputs = []
-    rel_dict = collections.defaultdict(lambda: [])
+    # rel_dict = collections.defaultdict(lambda: [])
     # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
     for i, rel in enumerate(relations):
         senses, arg1, arg2, context = rel
         if i % 1000 == 0:
             print(("Converting relation",i))
         for sense in [senses[0]]:
-            avg = np.average([d for t, d in arg1 if d is not None])
+            # avg = np.average([d for t, d in arg1 if d is not None])
             # Get tokens and weights
             tokens1 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg1]
             # Get weighted token vectors
@@ -268,7 +265,7 @@ def convert_relations(relations, label_subst, m):
             """
             #max1 = np.array(map(max, vecs))
             #min1 = np.array(map(min, vecs))
-            avg = np.average([d for t, d in arg2 if d is not None])
+            # avg = np.average([d for t, d in arg2 if d is not None])
             # Get tokens and weights
             tokens2 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg2]
             # Get weighted token vectors
@@ -311,7 +308,7 @@ def convert_relations(relations, label_subst, m):
 def convert_relations_docvec(relations, label_subst, m):
     inputs = []
     outputs = []
-    rel_dict = collections.defaultdict(lambda: [])
+    # rel_dict = collections.defaultdict(lambda: [])
     # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
     for i, rel in enumerate(relations):
         senses, arg1, arg2, context = rel

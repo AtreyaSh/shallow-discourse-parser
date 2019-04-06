@@ -1,5 +1,5 @@
-from reader import read_file, convert_relations, read_file_Org, read_file_noSenses, convert_relations_noSenses
-from readPBTD import subst_id_words
+from readers.reader import read_file, convert_relations, read_file_Org, read_file_noSenses, convert_relations_noSenses
+from readers.readPDTB import subst_id_words
 import json
 import pickle
 import sys
@@ -71,7 +71,7 @@ def test(inputfile, outputfile, parses_file):
         rel = json.loads(row)
 
 	#check TokenList Format and convert, if necessary
-	try:
+        try:
             token1 = rel["Arg1"]["TokenList"][0][0]
             rel["Arg1"]["TokenList"] = [i[2] for i in rel["Arg1"]["TokenList"]]
             try:
@@ -79,7 +79,7 @@ def test(inputfile, outputfile, parses_file):
                 rel["Arg2"]["TokenList"] = [i[2] for i in rel["Arg2"]["TokenList"]]
                 try:
                     con = rel["Connective"]["TokenList"][0][0]
-		    rel["Connective"]["TokenList"] = [i[2] for i in rel["Connective"]["TokenList"]]
+                    rel["Connective"]["TokenList"] = [i[2] for i in rel["Connective"]["TokenList"]]
                 except TypeError:
                     pass
                 except IndexError:
