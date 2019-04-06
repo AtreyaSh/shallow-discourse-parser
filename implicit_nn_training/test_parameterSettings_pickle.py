@@ -45,5 +45,3 @@ if __name__ == "__main__":
     test(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], parameter)
 
 #e.g. test_parameterSettings_pickle.py data/en-01-12-16-train/parses.json data/en-01-12-16-dev/parses.json data/en-01-12-16-train/relations.json data/en-01-12-16-dev/relations.json data/GoogleNews-vectors-negative300.bin
-
-

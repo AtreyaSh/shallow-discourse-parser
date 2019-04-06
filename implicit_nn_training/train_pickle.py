@@ -3,7 +3,7 @@ import json
 import gensim
 import logging
 #import climate
-from theanets import theanets
+import theanets
 import numpy as np
 import re
 import collections
