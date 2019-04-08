@@ -1,329 +1,163 @@
-# -*- coding: utf-8 -*-
-import json
-import gensim
-import logging
-#import climate
-import theanets
-import numpy as np
+import training.train_embedding as trainW
+from training.train_embedding import convert_relations
+from training.train_NN import train_theanet
+import sys
+import csv
+import os
+import pickle
+import datetime
 import re
-import collections
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
-def start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath,
-                  googlevecs_filepath):
-    """ train vectors """
-    logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-    # Initalize semantic model (with None data)
-    m = gensim.models.Word2Vec(None, size=300, window=8, min_count=3, workers=4)
-    #m = gensim.models.Doc2Vec(None, size=300, window=8, min_count=3, workers=4)
-    print("Reading data...")
-    # Load parse file
-    parses = json.load(open(parses_train_filepath))
-    parses.update(json.load(open(parses_dev_filepath)))
-    (relations_train, all_relations_train) = read_file(relations_train_filepath, parses)
-    (relations_dev, all_relations_dev) = read_file(relations_dev_filepath, parses)
-    relations = relations_train + relations_dev
-    all_relations = all_relations_train + all_relations_dev
-    # Substitution dictionary for class labels to integers
-    label_subst = dict([(y,x) for x,y in enumerate(set([r[0][0] for r in relations]))])
-    print(("Label subst", label_subst))
-    print("Build vocabulary...")
-    m.build_vocab(RelReader(all_relations))
-    #m.build_vocab(ParseReader(parses, docvec=True))
-    print("Reading pre-trained word vectors...")
-    m.intersect_word2vec_format(googlevecs_filepath, binary=True)
-    print("Training segment vectors...")
-    for iter in range(1,20):
-        ## Training of word vectors
-        m.alpha = 0.01/(2**iter)
-        m.min_alpha = 0.01/(2**(iter+1))
-        print(("Vector training iter", iter, m.alpha, m.min_alpha))
-        m.train(ParseReader(parses), total_examples = m.corpus_count, epochs=m.epochs)
+# TODO: gensim runs on cpu -> optimize this for cluster
+# TODO: theanets runs on GPU, requires some backend installation
+# TODO: fix warnings of runs -> tupe seq indexing of multidim arrays, recall/f-score ill-defined for samples
+# TODO: figure out how dev/test/blind works in their paper
+# TODO: in predict code, add ability to re-compute and get accuracy
+
+def combination(name, parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath):
+    # example for parameter (learning_rate, min_improvement, method are fix in this code)
+    parameter = [(0.1, 95, "prelu", "l2", 0.0001, "l1", 0.1), (0.3, 100, "prelu", "l2", 0.0001, "l2", 0.1 ),
+                 (0.35, 95, "rect:max", "l1", 0.0001, "l1", 0.1), (0.35, 95, "prelu", "l2", 0.0001, "l1", 0.1),
+                 (0.35, 100, "prelu", "l2", 0.0001, "l1", 0.1), (0.4, 80, "prelu", "l2", 0.0001, "l1", 0.1)]
+    nice = getNiceTempo()
+    os.makedirs("pickles/"+nice+"_"+name)
+    csvfile = open('pickles/'+ nice +'_'+ name + '/Results.csv', 'w')
+    fieldnames = ['VectorTraining','NN Training', 'Test Acc', 'Valid Acc', 'Train Acc', "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer.writeheader()
+    csvfile.flush()
+    counter_vec = 0
+    counter_nn = 0
+    for iter1 in range(1,4):
+        #train vectors 3x
+        input_train, output_train, input_dev, output_dev, label_subst = trainW.start_vectors(parses_train_filepath,
+        parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath, nice+"_"+name, name+"_"+str(counter_vec))
+        for iter2 in range(len(parameter)*5):
+            #for each trained vectors train each NN parameter combination 5x
+            if iter2%5 == 0:
+                triple = parameter[iter2//5]
+            (acc, valid_acc, train_acc, report) = train_theanet('nag', 0.0001, triple[0],
+                                                                             triple[4], triple[6],(triple[1],triple[2]), 0.001, 5,5, 
+                                                                             triple[3], triple[5], input_train, output_train, input_dev,
+                                                                             output_dev, label_subst, nice+"_"+name, str(counter_vec)+"_"+str(counter_nn))
+            writer.writerow({'VectorTraining': counter_vec ,'NN Training': counter_nn,  'Test Acc': round(acc*100,2), 'Valid Acc': round(valid_acc*100,2) , 
+                   "Train Acc": round(train_acc*100,2), "MinImprov": 0.001, "Method": "nag", "LernR": 0.0001,"Momentum":triple[0], 
+                   "Decay":"{0}={1}".format(triple[3], triple[4]), "Regular.": "{0}={1}".format(triple[5],triple[6]), "Hidden": 
+                   "({0}, {1})".format(triple[1],triple[2]),"Report":report})
+            counter_nn+=1
+            csvfile.flush()
+        counter_vec+=1
+    csvfile.close()
+
+def grid(name, parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath):
+    nice = getNiceTempo()
+    os.makedirs("pickles/"+nice+"_"+name)
+    csvfile = open('pickles/'+ nice +'_'+ name + '/' + 'Results.csv', 'w')
+    fieldnames = ['Counter','Test Acc', 'Valid Acc', 'Train Acc', "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer.writeheader()
+    csvfile.flush()
+    input_train, output_train, input_dev, output_dev, label_subst = trainW.start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath, nice+"_"+name, name)
+    #different parameter options, e.g.:
+    method = ['nag']
+    min_improvements = [0.001]
+    learning_rates = [0.0001]
+    w_h = [('l2', 'l1'), ('l1', 'l2'), ('l2','l2'), ("l1", "l1")]
+    momentum_alts = [0.1, 0.2, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+    hidden_alts = [60, 65, 70, 75, 80, 85, 90, 95, 100]
+    act_funcs = ['rect:max','prelu','lgrelu']
+    d_r = [(0.0001, 0.0001), (0.0001, 0.1)]
+    ## more parameter options, e.g.:
+    #method = ['nag', 'sgd', 'rprop','rmsprop', 'adadelta', 'hf', 'sample','layerwise']
+    #min_improvements = [0.001, 0.005, 0.1, 0.2]
+    #w_h = [('l2', 'l1'), ('l1', 'l2'), ('l2','l2'), ("l1", "l1")]
+    #learning_rates = [0.0001, 0.0005, 0.001, 0.005]
+    #momentum_alts = [0.1,0.2, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+    #hidden_alts = [20, 30, 40, 50, 60, 65, 70, 75, 80, 85, 90, 95, 100]
+    #act_funcs = ['linear','logistic','tanh+norm:z',  
+    #             'softplus', #'softmax', --> is to bad
+    #             'relu','rect:min', 'rect:max',
+    #             'norm:mean','norm:max', 'norm:std',
+    #             'norm:z', 'prelu','lgrelu']
+
+    #decay = [0.0001, 0.1, 0.2, 0.5]
+    #regularization = [0.0001, 0.1, 0.2, 0.5]
+    #d_r = []
+    #for i in decay:
+    #    for j in regularization:
+    #        d_r.append((i,j))
+    counter = 0
+    for h in method:
+        for i in min_improvements:
+            for j in learning_rates:
+                for k in momentum_alts:
+                    for l in hidden_alts:
+                        for m in act_funcs:
+                            for n in w_h:
+                                for o in d_r:
+                                    (acc, valid_acc, train_acc, report) = train_theanet(h, j, k, o[0], o[1], (l, m), i, 5,5, n[0], 
+                                                                                n[1], input_train, output_train, input_dev, 
+                                                                                output_dev, label_subst, nice+"_"+name, counter)
+                                    writer.writerow({'Counter': counter, 'Test Acc': round(acc*100,2), 'Valid Acc': round(valid_acc*100,2) , 
+                                                     "Train Acc": round(train_acc*100,2),
+                                                     "MinImprov": i, "Method": h, "LernR": j,
+                                                     "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
+                                                     "Hidden": "({0}, {1})".format(l,m), "Report": report})
+                                    counter += 1
+                                    csvfile.flush()
+    csvfile.close()
+
+def single(name, parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath):
+    ''' train the neural network with a given parameter setting'''
+    nice = getNiceTempo()
+    os.makedirs("pickles/"+nice+"_"+name)
+    csvfile = open('pickles/'+ nice +'_'+ name + '/' + 'Results.csv', 'w')
+    fieldnames = ['Test Acc', 'Valid Acc', 'Train Acc', "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer.writeheader()
+    csvfile.flush()
+    # import/train word embeddings
+    input_train, output_train, input_dev, output_dev, label_subst = trainW.start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath, nice+"_"+name, name)
+    # train neural network
+    method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'nag', 0.0001, 0.6, 0.0001, 0.0001, (60, 'lgrelu'), 0.001, 5, 5, "l1", "l2"
+    (acc, valid_acc, train_acc, report) = train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, input_train, output_train, input_dev, output_dev, label_subst, nice+"_"+name)
+    writer.writerow({'Test Acc': round(acc*100,2), 'Valid Acc': round(valid_acc*100,2), 
+                                                     "Train Acc": round(train_acc*100,2),
+                                                     "MinImprov": min_improvement, "Method": method, "LernR": learning_rate,
+                                                     "Momentum":momentum, "Decay":"{0}={1}".format(weight_lx, decay), "Regular.": "{0}={1}".format(hidden_lx, regularization),
+                                                     "Hidden": "({0}, {1})".format(hidden[0],hidden[1]), 'Report': report})
+    csvfile.flush()
+    csvfile.close()
+
+def import_pickle(path):
+    f = open(path, "rb")
+    m = pickle.load(f)
+    f.close()
+    f = open(os.path.dirname(path)+"/label_subst.pickle", "rb")
+    label_subst = pickle.load(f)
+    f.close()
+    f = open("pickles/relations_dev.pickle", "rb")
+    relations_dev = pickle.load(f)
+    f.close()
+    f = open("pickles/relations_train.pickle", "rb")
+    relations_train = pickle.load(f)
+    f.close()
     (input_train, output_train) = convert_relations(relations_train, label_subst, m)
     (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
     return input_train, output_train, input_dev, output_dev, label_subst
 
-def train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement,
-                  validate_every, patience, weight_lx, hidden_lx, input_train, output_train, input_dev, output_dev,
-                  label_subst):
-    ''' train the neural network, calculate confusion matrix and accuracies;
-        for more information about the NN parameters, visit https://theanets.readthedocs.io/en/stable/ '''
-
-    ## Training options:
-    ## 1.) Train on 90% training set, use the remaining 10% for validation and the test set for testing
-    #split_point = int(len(input_train)*0.9)
-    #train_data = (input_train[:split_point], output_train[:split_point])
-    #valid_data = (input_train[split_point:], output_train[split_point:])
-    #test_data = (input_dev, output_dev)
-
-    ## 2.) Train on 100% training set and use test set for validation and for testing
-    train_data = (input_train, output_train)
-    test_data = (input_dev, output_dev)
-    valid_data = (input_dev, output_dev)
-
-    accs = []
-    train_accs = []
-    valid_accs = []
-
-    exp = theanets.Experiment(theanets.Classifier, layers=(len(input_train[0]), hidden, len(label_subst)), loss='XE')
-    if weight_lx == "l1":
-        if hidden_lx == "l1":
-            exp.train(train_data, valid_data, optimize=method,
-                                            learning_rate=learning_rate,
-                                            momentum=momentum,
-                                            weight_l1=decay,
-                                            hidden_l1=regularization,
-                                            min_improvement=min_improvement, #0.02,
-                                            validate_every=validate_every, #5,
-                                            patience=patience)#=5
-
-        else:
-            exp.train(train_data, valid_data, optimize=method,
-                                            learning_rate=learning_rate,
-                                            momentum=momentum,
-                                            weight_l1=decay,
-                                            hidden_l2=regularization,
-                                            min_improvement=min_improvement, #0.02,
-                                            validate_every=validate_every, #5,
-                                            patience=patience)#=5
-    else:
-        if hidden_lx == "l1":
-            exp.train(train_data, valid_data, optimize=method,
-                                            learning_rate=learning_rate,
-                                            momentum=momentum,
-                                            weight_l2=decay,
-                                            hidden_l1=regularization,
-                                            min_improvement=min_improvement, #0.02,
-                                            validate_every=validate_every, #5,
-                                            patience=patience)#=5
-        else:
-            exp.train(train_data, valid_data, optimize=method,
-                                            learning_rate=learning_rate,
-                                            momentum=momentum,
-                                            weight_l2=decay,
-                                            hidden_l2=regularization,
-                                            min_improvement=min_improvement, #0.02,
-                                            validate_every=validate_every, #5,
-                                            patience=patience)#=5
-    confmx = confusion_matrix(exp.network.predict(test_data[0]), test_data[1])
-    acc = float(sum(np.diag(confmx)))/sum(sum(confmx))
-    print(("acc original: ", acc))
-    print(("acc sklear: ", accuracy_score(exp.network.predict(test_data[0]), test_data[1])))
-    print((classification_report(exp.network.predict(test_data[0]),test_data[1]), "\nAverage accuracy:", acc))
-    print(("Confusion matrix:\n", confmx))
-    accs.append(acc)
-    print(("Mean accuracy", np.average(accs), np.std(accs)))
-    train_acc = accuracy_score(exp.network.predict(train_data[0]),train_data[1])
-    train_accs.append(train_acc)
-    print(("Mean Train-Accuracy", np.average(train_accs), np.std(train_accs)))
-    valid_acc = accuracy_score(exp.network.predict(valid_data[0]),valid_data[1])
-    valid_accs.append(valid_acc)
-    return np.average(accs), np.average(valid_accs), np.average(train_accs)#, label_subst, exp.network.predict(test_data[0])
-
-class RelReader(object):
-    """ Iterator for reading relation data """
-    def __init__(self, segs, docvec=False):
-        self.segs = segs
-        self.docvec = docvec
-    def __iter__(self):
-        for file, i in zip(self.segs, list(range(len(self.segs)))):
-            for sub in [0, 1]:
-                # doclab = 'SEG_%d.%d' % (i, sub)
-                #if i % 1000 == 0:
-                    #print "      Reading", doclab
-                text = [token for token, _ in self.segs[i][sub+1]]
-                if self.docvec:
-                    yield gensim.models.doc2vec.TaggedDocument(words=text, tags=i*2+sub)#[doclab])
-                else:
-                    yield text
-
-class ParseReader(object):
-    """ Iterator for reading parse data """
-    def __init__(self, parses, docvec=False, offset=0):
-        self.parses = parses
-        self.docvec = docvec
-        self.offset = offset
-    def __iter__(self):
-        i = -1
-        for doc in self.parses:
-            ####print "      Reading", doc
-            for sent_i, sent in enumerate(self.parses[doc]['sentences']):
-                tokens = [w for w, _ in sent['words']]
-                i += 1
-                if self.docvec:
-                    yield gensim.models.doc2vec.TaggedDocument(words=tokens, tags=self.offset+i)#["%s_%d" % (doc, sent_i)])
-                else:
-                    yield tokens
-
-def preproc(text):
-    """ Text preprocessing """
-    #text = text.lower()#.decode('utf-8')
-    text = re.sub(r"([\.:;,\!\?\"\'])", r" \1 ", text)
-    return text.split()
-
-def build_tree(dependencies):
-    """ Build tree structure from dependency list """
-    tree = collections.defaultdict(lambda: [])
-    for rel, parent, child in dependencies:
-        tree[parent].append(child)
-    return tree
-
-def traverse(tree, node='ROOT-0', depth=0):
-    """ Traverse dependency tree, calculate token depths """
-    tokens = []
-    for child in tree[node]:
-        tokens.append((child, depth))
-        tokens += traverse(tree, child, depth+1)
-    return tokens
-
-def save_vectors(filename, inputs, outputs, label_subst):
-    """ Export vector features to text file """
-    lookup = dict([(y,x) for x,y in list(label_subst.items())])
-    f = open(filename, "w")
-    for input, output in zip(inputs, outputs):
-        f.write((lookup[output] + ' ' + ' '.join(map(str, input)) + '\n').encode('utf-8'))
-    f.close()
-
-def read_file(filename, parses):
-    """ Read relation data from JSON """
-    relations = []
-    all_relations = []
-    for row in open(filename):
-        rel = json.loads(row)
-        doc = parses[rel['DocID']]
-        arg1 = get_token_depths(rel['Arg1'], doc)
-        arg2 = get_token_depths(rel['Arg2'], doc)
-        context = None #get_context(rel, doc, context_size=1)
-        # Use for word vector training
-        all_relations.append((rel['Sense'], arg1, arg2))
-        # Use for prediction (implicit relations only)
-        if rel['Type'] in ['Implicit', 'EntRel']:#, 'AltLex']:
-            relations.append((rel['Sense'], arg1, arg2, context))
-    return (relations, all_relations)
-
-def get_token_depths(arg, doc):
-    """ Wrapper for token depth calculation """
-    tokens = []
-    depths = {}
-    for _, _, _, sent_i, token_i in arg['TokenList']:
-        if sent_i not in depths:
-            depths[sent_i] = dict(traverse(build_tree(doc['sentences'][sent_i]['dependencies'])))
-        token, _ = doc['sentences'][sent_i]['words'][token_i]
-        try:
-            tokens.append((token, depths[sent_i][token+'-'+str(token_i+1)]))
-        except KeyError:
-            tokens.append((token, None))
-    return tokens
-
-def get_context(rel, doc, context_size=2):
-    """ Get tokens from context sentences of arguments """
-    pretext, posttext = [], []
-    for context_i in reversed(list(range(context_size+1))):
-        _, _, _, sent_i, _ = rel['Arg1']['TokenList'][0]
-        for token_i, token in enumerate(doc['sentences'][sent_i-context_i]['words']):
-            token, _ = token
-            if context_i == 0 and token_i >= rel['Arg1']['TokenList'][0][-1]:
-                break
-            pretext.append(token)
-    for context_i in range(context_size+1):
-        _, _, _, sent_i, _ = rel['Arg2']['TokenList'][-1]
-        try:
-            for token_i, token in enumerate(doc['sentences'][sent_i+context_i]['words']):
-                token, _ = token
-                if context_i == 0 and token_i <= rel['Arg2']['TokenList'][-1][-1]:
-                    continue
-                posttext.append(token)
-        except IndexError:
-            pass
-    return (pretext, posttext)
-
-def convert_relations(relations, label_subst, m):
-    inputs = []
-    outputs = []
-    # rel_dict = collections.defaultdict(lambda: [])
-    # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
-    for i, rel in enumerate(relations):
-        senses, arg1, arg2, context = rel
-        if i % 1000 == 0:
-            print(("Converting relation",i))
-        for sense in [senses[0]]:
-            # avg = np.average([d for t, d in arg1 if d is not None])
-            # Get tokens and weights
-            tokens1 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg1]
-            # Get weighted token vectors
-            vecs = np.transpose([m[t]*w for t,w in tokens1 if t in m] + [m[t.lower()]*w for t,w in tokens1 if t not in m and t.lower() in m])
-            if len(vecs) == 0:
-                vecs = m['a']*0
-            vec1 = np.array(list(map(np.average, vecs)))
-            vec1prod = np.array(list(map(np.prod, vecs)))
-            # Get vectors for tokens in context (before arg1)
-            """context1 = np.transpose([m[t] for t in context[0] if t in m] + [m[t.lower()] for t in context[0] if t not in m and t.lower() in m])
-            if len(context1) == 0:
-                context1avg = vec1*0
-            else:
-                context1avg = np.array(map(np.average, context1))
-            """
-            #max1 = np.array(map(max, vecs))
-            #min1 = np.array(map(min, vecs))
-            # avg = np.average([d for t, d in arg2 if d is not None])
-            # Get tokens and weights
-            tokens2 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg2]
-            # Get weighted token vectors
-            vecs = np.transpose([m[t]*w for t,w in tokens2 if t in m] + [m[t.lower()]*w for t,w in tokens2 if t not in m and t.lower() in m])
-            if len(vecs) == 0:
-                vecs = m['a']*0
-            # Get vectors for tokens in context (after arg2)
-            """context2 = np.transpose([m[t] for t in context[1] if t in m] + [m[t.lower()] for t in context[1] if t not in m and t.lower() in m])
-            if len(context2) == 0:
-                context2avg = vec2*0
-            else:
-                context2avg = np.array(map(np.average, context2))
-            """
-            vec2 = np.array(list(map(np.average, vecs)))
-            vec2prod = np.array(list(map(np.prod, vecs)))
-            #max2 = np.array(map(max, vecs))
-            #min2 = np.array(map(min, vecs))
-            #final = np.concatenate([vec1,max1,min1,vec2,max2,min2])
-            #final = np.concatenate([vec1,vec2])
-            ##final = np.concatenate([np.add(vec1prod,vec1), np.add(vec2prod,vec2), context1avg, context2avg])
-            final = np.concatenate([np.add(vec1prod,vec1), np.add(vec2prod,vec2)])
-            #final = np.concatenate([vec1prod,vec1, vec2prod,vec2])
-            if len(final) == 2*len(m['a']):
-                inputs.append(final)
-            else:
-                print(("Warning: rel %d has length %d" % (i, len(final))))
-                if len(vec1) == 0:
-                    print(("arg1", arg1))
-                if len(vec2) == 0:
-                    print(("arg2", arg2))
-                break
-            outputs.append(np.array(label_subst[sense]))
-    ## Theanets training from this point on
-    inputs = np.array(inputs)
-    inputs = inputs.astype(np.float32)
-    outputs = np.array(outputs)
-    outputs = outputs.astype(np.int32)
-    return (inputs, outputs) 
-
-def convert_relations_docvec(relations, label_subst, m):
-    inputs = []
-    outputs = []
-    # rel_dict = collections.defaultdict(lambda: [])
-    # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
-    for i, rel in enumerate(relations):
-        senses, arg1, arg2, context = rel
-        if i % 1000 == 0:
-            print(("Converting relation",i))
-        for sense in senses:
-            final = np.concatenate([m.docvecs["SEG_%d.0" % i], m.docvecs["SEG_%d.1" % i]])
-            if len(final) > 0:
-                inputs.append(final)
-            else:
-                continue
-            outputs.append(np.array(label_subst[sense]))
-    ## Theanets training from this point on
-    inputs = np.array(inputs)
-    inputs = inputs.astype(np.float32)
-    outputs = np.array(outputs)
-    outputs = outputs.astype(np.int32)
-    return (inputs, outputs)
+def getNiceTempo():
+    now = datetime.datetime.now()
+    dateAsString = now.strftime("%Y-%m-%d %H:%M")
+    dateAsString = re.sub(" ", "_" ,dateAsString)
+    dateAsString = re.sub(":", "_" ,dateAsString)
+    dateAsString = re.sub("-", "_" ,dateAsString)
+    return dateAsString
+    
+if __name__ == "__main__":
+    if sys.argv[1] == "single":
+        single(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
+    elif sys.argv[1] == "grid":
+        grid(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
+    elif sys.argv[1] == "combination":
+        combination(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])

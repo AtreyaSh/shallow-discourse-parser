@@ -1,8 +1,9 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 import json
 import numpy as np
 import collections
-
 
 def build_tree(dependencies):
     """ Build tree structure from dependency list """
@@ -11,7 +12,6 @@ def build_tree(dependencies):
         tree[parent].append(child)
     return tree
 
-
 def traverse(tree, node='ROOT-0', depth=0):
     """ Traverse dependency tree, calculate token depths """
     tokens = []
@@ -19,7 +19,6 @@ def traverse(tree, node='ROOT-0', depth=0):
         tokens.append((child, depth))
         tokens += traverse(tree, child, depth+1)
     return tokens
-
 
 def read_file(filename, parses):
     """ Read relation data from JSON """
@@ -37,7 +36,6 @@ def read_file(filename, parses):
         if rel['Type'] in ['Implicit', 'EntRel']:#, 'AltLex']:
             relations.append((rel['Sense'], arg1, arg2, context))
     return (relations, all_relations)
-
 
 def read_file_Org(filename, parses):
     """ Read relation data from JSON """
@@ -57,7 +55,6 @@ def read_file_Org(filename, parses):
         relations.append((rel['Sense'], arg1, arg2, context))
     return (relations, all_relations)
 
-
 def get_token_depths_Org(arg, doc):
     """ Wrapper for token depth calculation """
     tokens = []
@@ -71,7 +68,6 @@ def get_token_depths_Org(arg, doc):
         except KeyError:
             tokens.append((token, None))
     return tokens
-
 
 def read_file_noSenses(filename, parses):
     """ Read relation data from JSON """
@@ -92,7 +88,6 @@ def read_file_noSenses(filename, parses):
         else:
             continue
     return (relations, all_relations)
-
 
 def get_token_depths(arg, doc):
     """ Wrapper for token depth calculation """
@@ -130,7 +125,6 @@ def get_context_Org(rel, doc, context_size=2):
             pass
     return (pretext, posttext)
 
-
 def get_context(rel, doc, context_size=2):
     """ Get tokens from context sentences of arguments """
     pretext, posttext = [], []
@@ -159,8 +153,6 @@ def get_context(rel, doc, context_size=2):
                 pass
     #print(pretext, posttext)
     return (pretext, posttext)
-
-
 
 def convert_relations_noSenses(relations, label_subst, m):
     inputs = []
@@ -232,7 +224,6 @@ def convert_relations_noSenses(relations, label_subst, m):
     outputs = outputs.astype(np.int32)
     return (inputs, outputs)
 
-
 def convert_relations(relations, label_subst, m):
     inputs = []
     outputs = []
@@ -291,7 +282,6 @@ def convert_relations(relations, label_subst, m):
     outputs = np.array(outputs)
     outputs = outputs.astype(np.int32)
     return (inputs, outputs) 
-
 
 def convert_relations_docvec(relations, label_subst, m):
     inputs = []

@@ -8,8 +8,7 @@ To set up the pre-commit hook that will keep python dependencies up-to-date, ple
 $ ./init.sh
 ```
 
-The Frankfurt Shallow Discourse Parser
-====================================
+## The Frankfurt Shallow Discourse Parser
 
 Developed at the Applied Computational Linguistics Lab (ACoLi), Goethe University Frankfurt am Main, Germany.
 

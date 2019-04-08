@@ -1,6 +1,7 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import json
-import ast
-import os
 
 def parses_load(parses_file):
     ''' open parses file '''
@@ -15,7 +16,6 @@ def get_words_dict(parses_file):
     wsj_id_list = [i for i in list(data.keys())]
     docID_words_dict = dict()
     for wsj_id in wsj_id_list:
-        tokenlist = []
         words = []
         counter_sentence = 0
         counter_token=0
