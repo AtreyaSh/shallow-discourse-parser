@@ -56,25 +56,31 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
         m.train(ParseReader(parses), total_examples = m.corpus_count, epochs=m.epochs)
     if not os.path.exists("pickles"):
         os.makedirs("pickles")
-    file = open("pickles/"+str(direct)+"/"+str(name)+".pickle", "wb")
-    pickle.dump(m, file, protocol=pickle.HIGHEST_PROTOCOL)
-    file.close()
-    if not os.path.exists("pickles/"+str(direct)+"/label_subst.pickle"):
-        file_ls = open("pickles/"+str(direct)+"/label_subst.pickle", "wb")
-        pickle.dump(label_subst, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/relations_dev.pickle"):
-        file_ls = open("pickles/relations_dev.pickle", "wb")
-        pickle.dump(relations_dev, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/relations_train.pickle"):
-        file_ls = open("pickles/relations_train.pickle", "wb")
-        pickle.dump(relations_train, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
     (input_train, output_train) = convert_relations(relations_train, label_subst, m)
     (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
     (input_test, output_test) = convert_relations(relations_test, label_subst, m)
-    return input_train, output_train, input_dev, output_dev, input_test, output_test ,label_subst
+    if not os.path.exists("pickles/input_train.pickle"):
+        with open("pickles/input_train.pickle", 'wb') as f:
+            pickle.dump(input_train, f, protocol=pickle.HIGHEST_PROTOCOL)
+    if not os.path.exists("pickles/output_train.pickle"):
+        with open("pickles/output_train.pickle", 'wb') as f:
+            pickle.dump(output_train, f, protocol=pickle.HIGHEST_PROTOCOL)
+    if not os.path.exists("pickles/input_dev.pickle"):
+        with open("pickles/input_dev.pickle", 'wb') as f:
+            pickle.dump(input_dev, f, protocol=pickle.HIGHEST_PROTOCOL)
+    if not os.path.exists("pickles/output_dev.pickle"):
+        with open("pickles/output_dev.pickle", 'wb') as f:
+            pickle.dump(output_dev, f, protocol=pickle.HIGHEST_PROTOCOL)
+    if not os.path.exists("pickles/input_test.pickle"):
+        with open("pickles/input_test.pickle", 'wb') as f:
+            pickle.dump(input_test, f, protocol=pickle.HIGHEST_PROTOCOL)
+    if not os.path.exists("pickles/output_test.pickle"):
+        with open("pickles/output_test.pickle", 'wb') as f:
+            pickle.dump(output_test, f, protocol=pickle.HIGHEST_PROTOCOL)
+    if not os.path.exists("pickles/label_subst.pickle"):
+        with open("pickles/label_subst.pickle", 'wb') as f:
+            pickle.dump(label_subst, f, protocol=pickle.HIGHEST_PROTOCOL)
+    return input_train, output_train, input_dev, output_dev, input_test, output_test, label_subst
 
 def convert_relations(relations, label_subst, m):
     inputs = []

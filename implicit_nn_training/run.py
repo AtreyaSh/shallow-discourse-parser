@@ -11,6 +11,6 @@ os.system("python3 train.py \
 os.system("python3 train.py \
           --mode grid --name m_0")
 
-# run combination instance, old embedding m_0
+# # run combination instance, old embedding m_0
 os.system("python3 train.py \
           --mode combination --name m_0")

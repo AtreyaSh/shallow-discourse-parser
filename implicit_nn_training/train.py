@@ -8,12 +8,12 @@ import pickle
 import datetime
 import argparse
 
+DBUG = True
 # TODO: gensim runs on cpu -> optimize this for cluster
 # TODO: theanets runs on GPU, requires some backend installation
 # TODO: fix warnings of runs -> tupe seq indexing of multidim arrays, recall/f-score ill-defined for samples
 # TODO: figure out how dev/test/blind works in their paper
 # TODO: in predict code, add ability to re-compute and get accuracy
-
 
 def combination(trainpath, devpath, testpath, args):
     # example for parameter (learning_rate, min_improvement, method are fix in this code)
@@ -30,7 +30,7 @@ def combination(trainpath, devpath, testpath, args):
     csvfile.flush()
     counter_vec = 0
     counter_nn = 0
-    for iter1 in range(1,4):
+    for iter1 in range(1,2):
         #train vectors 3x
 
         if args.debug:
