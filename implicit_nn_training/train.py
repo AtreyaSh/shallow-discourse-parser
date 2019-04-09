@@ -7,17 +7,13 @@ import os
 import pickle
 import datetime
 import argparse
-import re
 
-DBUG = True
 # TODO: gensim runs on cpu -> optimize this for cluster
 # TODO: theanets runs on GPU, requires some backend installation
 # TODO: fix warnings of runs -> tupe seq indexing of multidim arrays, recall/f-score ill-defined for samples
 # TODO: figure out how dev/test/blind works in their paper
 # TODO: in predict code, add ability to re-compute and get accuracy
 
-if DBUG:
-    print("WARNING! DEVELOPMENT MODE")
 
 def combination(trainpath, devpath, testpath, args):
     # example for parameter (learning_rate, min_improvement, method are fix in this code)
@@ -37,7 +33,7 @@ def combination(trainpath, devpath, testpath, args):
     for iter1 in range(1,4):
         #train vectors 3x
 
-        if DBUG:
+        if args.debug:
             embeddings = restart()
         else:
             embeddings = trainW.start_vectors("%sparses.json" % trainpath, "%sparses.json" % devpath,
@@ -69,7 +65,7 @@ def grid(trainpath, devpath, testpath, args):
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.flush()
-    if DBUG:
+    if args.debug:
         embeddings = restart()
     else:
         embeddings = trainW.start_vectors("%sparses.json" % trainpath, "%sparses.json" % devpath,
@@ -134,7 +130,7 @@ def single(trainpath, devpath, testpath, args):
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.flush()
-    if DBUG:
+    if args.debug:
         embeddings = restart()
     else:
         # make sure we dont break paths with appending
@@ -196,8 +192,10 @@ if __name__ == "__main__":
     parser.add_argument("--mode", type=str, default="single",
                         help="what to test")
     parser.add_argument("--name", type=str)
+    parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
-
+    if args.debug:
+        print("WARNING DEBUG MODE")
     #ensure we later don't break paths
     args.test = args.test if args.test.endswith("/") else "%s/" % args.test
     args.dev = args.dev if args.dev.endswith("/") else "%s/" % args.dev
