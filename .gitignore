@@ -6,6 +6,7 @@
 
 # intermediate files
 *.cs
+implicit_nn_training/pickles/*
 
 # pdtb files
 conll2016.zip
