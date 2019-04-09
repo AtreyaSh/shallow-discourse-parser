@@ -23,8 +23,8 @@ import collections
 # TODO: possibly try to play with doc2vec
 # TODO: add if statement in start_vector eg m_0 or m_1 for different models
 
-def start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, 
-                     googlevecs_filepath, direct, name = 0):
+def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepath, relations_train_filepath,
+                  relations_dev_filepath, relations_test_filepath, googlevecs_filepath, direct, name = 0):
     """ train vectors """
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
     # Initalize semantic model (with None data)
@@ -34,10 +34,12 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_fi
     # Load parse file
     parses = json.load(open(parses_train_filepath))
     parses.update(json.load(open(parses_dev_filepath)))
+    parses.update(json.load(open(parses_test_filepath)))
     (relations_train, all_relations_train) = read_file(relations_train_filepath, parses)
     (relations_dev, all_relations_dev) = read_file(relations_dev_filepath, parses)
-    relations = relations_train + relations_dev
-    all_relations = all_relations_train + all_relations_dev
+    (relations_test, all_relations_test) = read_file(relations_test_filepath, parses)
+    relations = relations_train + relations_dev + relations_test
+    all_relations = all_relations_train + all_relations_dev + all_relations_test
     # Substitution dictionary for class labels to integers
     label_subst = dict([(y,x) for x,y in enumerate(set([r[0][0] for r in relations]))])
     print(("Label subst", label_subst))
@@ -71,7 +73,8 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_fi
         file_ls.close()
     (input_train, output_train) = convert_relations(relations_train, label_subst, m)
     (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
-    return input_train, output_train, input_dev, output_dev, label_subst
+    (input_test, output_test) = convert_relations(relations_test, label_subst, m)
+    return input_train, output_train, input_dev, output_dev, input_test, output_test ,label_subst
 
 def convert_relations(relations, label_subst, m):
     inputs = []

@@ -6,6 +6,7 @@ import csv
 import os
 import pickle
 import datetime
+import argparse
 import re
 
 DBUG = True
@@ -18,7 +19,7 @@ DBUG = True
 if DBUG:
     print("WARNING! DEVELOPMENT MODE")
 
-def combination(name, parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath):
+def combination(name, args):
     # example for parameter (learning_rate, min_improvement, method are fix in this code)
     parameter = [(0.1, 95, "prelu", "l2", 0.0001, "l1", 0.1), (0.3, 100, "prelu", "l2", 0.0001, "l2", 0.1 ),
                  (0.35, 95, "rect:max", "l1", 0.0001, "l1", 0.1), (0.35, 95, "prelu", "l2", 0.0001, "l1", 0.1),
@@ -32,13 +33,23 @@ def combination(name, parses_train_filepath, parses_dev_filepath, relations_trai
     csvfile.flush()
     counter_vec = 0
     counter_nn = 0
-    for iter1 in range(1,2):
+    for iter1 in range(1,4):
         #train vectors 3x
+
         if DBUG:
-            input_train, output_train, input_dev, output_dev, label_subst = restart()
+            embeddings = restart()
         else:
-            input_train, output_train, input_dev, output_dev, label_subst = trainW.start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath, nice+"_"+name, name)
-        for iter2 in range(len(parameter)*1):
+            # make sure we dont break paths with appending
+            testpath = args.test if args.test.endswith("/") else "%s/" % args.test
+            devpath = args.dev if args.dev.endswith("/") else "%s/" % args.dev
+            trainpath = args.train if args.train.endswith("/") else "%s/" % args.train
+
+            embeddings = trainW.start_vectors("%sparses.json" % trainpath, "%sparses.json" % devpath,
+                                              "%sparses.json" % testpath, "%srelations.json" % trainpath,
+                                              "%srelations.json" % devpath, "%srelations.json" % testpath,
+                                              args.emb, nice + "_" + args.name, args.name)
+        input_train, output_train, input_dev, output_dev, _, _, label_subst = embeddings  # TODO: temporary call
+        for iter2 in range(len(parameter)*5):
             #for each trained vectors train each NN parameter combination 5x
             if iter2%5 == 0:
                 triple = parameter[iter2//5]
@@ -55,7 +66,7 @@ def combination(name, parses_train_filepath, parses_dev_filepath, relations_trai
         counter_vec+=1
     csvfile.close()
 
-def grid(name, parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath):
+def grid(name, args):
     nice = getNiceTempo()
     os.makedirs("pickles/"+nice+"_"+name)
     csvfile = open('pickles/'+ nice +'_'+ name + '/' + 'Results.csv', 'w')
@@ -64,9 +75,18 @@ def grid(name, parses_train_filepath, parses_dev_filepath, relations_train_filep
     writer.writeheader()
     csvfile.flush()
     if DBUG:
-        input_train, output_train, input_dev, output_dev, label_subst = restart()
+        embeddings = restart()
     else:
-        input_train, output_train, input_dev, output_dev, label_subst = trainW.start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath, nice+"_"+name, name)
+        # make sure we dont break paths with appending
+        testpath = args.test if args.test.endswith("/") else "%s/" % args.test
+        devpath = args.dev if args.dev.endswith("/") else "%s/" % args.dev
+        trainpath = args.train if args.train.endswith("/") else "%s/" % args.train
+
+        embeddings = trainW.start_vectors("%sparses.json" % trainpath, "%sparses.json" % devpath,
+                                          "%sparses.json" % testpath, "%srelations.json" % trainpath,
+                                          "%srelations.json" % devpath, "%srelations.json" % testpath,
+                                          args.emb, nice + "_" + args.name, args.name)
+    input_train, output_train, input_dev, output_dev, _, _, label_subst = embeddings # TODO: temporary call
     #different parameter options, e.g.:
     method = ['nag']
     min_improvements = [0.001]
@@ -116,7 +136,7 @@ def grid(name, parses_train_filepath, parses_dev_filepath, relations_train_filep
                                     csvfile.flush()
     csvfile.close()
 
-def single(name, parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath):
+def single(name, args):
     ''' train the neural network with a given parameter setting'''
     nice = getNiceTempo()
     os.makedirs("pickles/"+nice+"_"+name)
@@ -125,11 +145,20 @@ def single(name, parses_train_filepath, parses_dev_filepath, relations_train_fil
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.flush()
-    # import/train word embeddings
     if DBUG:
-        input_train, output_train, input_dev, output_dev, label_subst = restart()
+        embeddings = restart()
     else:
-        input_train, output_train, input_dev, output_dev, label_subst = trainW.start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath, nice+"_"+name, name)
+        # make sure we dont break paths with appending
+        testpath = args.test if args.test.endswith("/") else "%s/" % args.test
+        devpath = args.dev if args.dev.endswith("/") else "%s/" % args.dev
+        trainpath = args.train if args.train.endswith("/") else "%s/" % args.train
+
+        embeddings = trainW.start_vectors("%sparses.json" % trainpath, "%sparses.json" % devpath,
+                                          "%sparses.json" % testpath, "%srelations.json" % trainpath,
+                                          "%srelations.json" % devpath, "%srelations.json" % testpath,
+                                          args.emb, nice+"_"+args.name, args.name)
+
+    input_train, output_train, input_dev, output_dev, _, _, label_subst = embeddings  # TODO: temporary call
     # train neural network
     method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'nag', 0.0001, 0.6, 0.0001, 0.0001, (60, 'lgrelu'), 0.001, 5, 5, "l1", "l2"
     (acc, valid_acc, train_acc, report) = train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, input_train, output_train, input_dev, output_dev, label_subst, nice+"_"+name)
@@ -144,7 +173,7 @@ def single(name, parses_train_filepath, parses_dev_filepath, relations_train_fil
 def restart():
     """saves the time reconverting the relations each and every time."""
     pseudo_tuple = []
-    for load_file in ["input_train", "output_train", "input_dev", "output_dev", "label_subst"]:
+    for load_file in ["input_train", "output_train", "input_dev", "output_dev", "input_test" , "output_test", "label_subst"]:
         with open("pickles/%s.pickle" % load_file, "rb") as f:
             loaded = pickle.load(f)
             pseudo_tuple.append(loaded)
@@ -171,6 +200,28 @@ def getNiceTempo():
     return datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--test", type=str, default="data/en.test/",
+                        help="Path to test data folder")
+    parser.add_argument("--train", type=str, default="data/en.train/",
+                        help="Path to train data folder")
+    parser.add_argument("--dev", type=str, default="data/en.dev/",
+                        help="Path to development data folder")
+    parser.add_argument("--emb", type=str, default="data/GoogleNews-vectors-negative300.bin",
+                        help="Path to pretrained embeddings")
+    parser.add_argument("--mode", type=str, default="single",
+                        help="what to test")
+    parser.add_argument("--name", type=str)
+    args = parser.parse_args()
+    if args.mode == "single":
+        single(args.name, args)
+    elif args.mode == "grid":
+        grid(args.name, args)
+    elif args.mode == "combination":
+        combination(args.name, args)
+    else:
+        print("Unknown args")
+        sys.exit()
     if sys.argv[1] == "single":
         single(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
     elif sys.argv[1] == "grid":
