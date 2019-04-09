@@ -11,6 +11,9 @@ implicit_nn_training/pickles/*
 # pdtb files
 conll2016.zip
 
+# development environs
+.idea
+
 # shankar local
 brainstorm.md
 paper.pdf

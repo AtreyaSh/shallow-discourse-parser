@@ -8,11 +8,15 @@ import pickle
 import datetime
 import re
 
+DBUG = True
 # TODO: gensim runs on cpu -> optimize this for cluster
 # TODO: theanets runs on GPU, requires some backend installation
 # TODO: fix warnings of runs -> tupe seq indexing of multidim arrays, recall/f-score ill-defined for samples
 # TODO: figure out how dev/test/blind works in their paper
 # TODO: in predict code, add ability to re-compute and get accuracy
+
+if DBUG:
+    print("WARNING! DEVELOPMENT MODE")
 
 def combination(name, parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath):
     # example for parameter (learning_rate, min_improvement, method are fix in this code)
@@ -28,11 +32,13 @@ def combination(name, parses_train_filepath, parses_dev_filepath, relations_trai
     csvfile.flush()
     counter_vec = 0
     counter_nn = 0
-    for iter1 in range(1,4):
+    for iter1 in range(1,2):
         #train vectors 3x
-        input_train, output_train, input_dev, output_dev, label_subst = trainW.start_vectors(parses_train_filepath,
-        parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath, nice+"_"+name, name+"_"+str(counter_vec))
-        for iter2 in range(len(parameter)*5):
+        if DBUG:
+            input_train, output_train, input_dev, output_dev, label_subst = restart()
+        else:
+            input_train, output_train, input_dev, output_dev, label_subst = trainW.start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath, nice+"_"+name, name)
+        for iter2 in range(len(parameter)*1):
             #for each trained vectors train each NN parameter combination 5x
             if iter2%5 == 0:
                 triple = parameter[iter2//5]
@@ -57,7 +63,10 @@ def grid(name, parses_train_filepath, parses_dev_filepath, relations_train_filep
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.flush()
-    input_train, output_train, input_dev, output_dev, label_subst = trainW.start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath, nice+"_"+name, name)
+    if DBUG:
+        input_train, output_train, input_dev, output_dev, label_subst = restart()
+    else:
+        input_train, output_train, input_dev, output_dev, label_subst = trainW.start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath, nice+"_"+name, name)
     #different parameter options, e.g.:
     method = ['nag']
     min_improvements = [0.001]
@@ -65,7 +74,7 @@ def grid(name, parses_train_filepath, parses_dev_filepath, relations_train_filep
     w_h = [('l2', 'l1'), ('l1', 'l2'), ('l2','l2'), ("l1", "l1")]
     momentum_alts = [0.1, 0.2, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
     hidden_alts = [60, 65, 70, 75, 80, 85, 90, 95, 100]
-    act_funcs = ['rect:max','prelu','lgrelu']
+    act_funcs = ['rect:max','prelu','lgrelu','']
     d_r = [(0.0001, 0.0001), (0.0001, 0.1)]
     ## more parameter options, e.g.:
     #method = ['nag', 'sgd', 'rprop','rmsprop', 'adadelta', 'hf', 'sample','layerwise']
@@ -117,7 +126,10 @@ def single(name, parses_train_filepath, parses_dev_filepath, relations_train_fil
     writer.writeheader()
     csvfile.flush()
     # import/train word embeddings
-    input_train, output_train, input_dev, output_dev, label_subst = trainW.start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath, nice+"_"+name, name)
+    if DBUG:
+        input_train, output_train, input_dev, output_dev, label_subst = restart()
+    else:
+        input_train, output_train, input_dev, output_dev, label_subst = trainW.start_vectors(parses_train_filepath, parses_dev_filepath, relations_train_filepath, relations_dev_filepath, googlevecs_filepath, nice+"_"+name, name)
     # train neural network
     method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'nag', 0.0001, 0.6, 0.0001, 0.0001, (60, 'lgrelu'), 0.001, 5, 5, "l1", "l2"
     (acc, valid_acc, train_acc, report) = train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, input_train, output_train, input_dev, output_dev, label_subst, nice+"_"+name)
@@ -128,6 +140,15 @@ def single(name, parses_train_filepath, parses_dev_filepath, relations_train_fil
                                                      "Hidden": "({0}, {1})".format(hidden[0],hidden[1]), 'Report': report})
     csvfile.flush()
     csvfile.close()
+
+def restart():
+    """saves the time reconverting the relations each and every time."""
+    pseudo_tuple = []
+    for load_file in ["input_train", "output_train", "input_dev", "output_dev", "label_subst"]:
+        with open("pickles/%s.pickle" % load_file, "rb") as f:
+            loaded = pickle.load(f)
+            pseudo_tuple.append(loaded)
+    return tuple(pseudo_tuple)
 
 def import_pickle(path):
     f = open(path, "rb")
@@ -147,13 +168,8 @@ def import_pickle(path):
     return input_train, output_train, input_dev, output_dev, label_subst
 
 def getNiceTempo():
-    now = datetime.datetime.now()
-    dateAsString = now.strftime("%Y-%m-%d %H:%M")
-    dateAsString = re.sub(" ", "_" ,dateAsString)
-    dateAsString = re.sub(":", "_" ,dateAsString)
-    dateAsString = re.sub("-", "_" ,dateAsString)
-    return dateAsString
-    
+    return datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+
 if __name__ == "__main__":
     if sys.argv[1] == "single":
         single(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
