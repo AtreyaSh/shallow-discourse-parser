@@ -8,8 +8,10 @@ import pickle
 
 def train_theanet(method, learning_rate, momentum, decay, regularization, hidden,
                   min_improvement, validate_every, patience, weight_lx, hidden_lx,
-                  input_train, output_train, input_dev, output_dev, label_subst, direct, name = 0):
+                  embeddings, direct, name = 0):
     ''' train neural network, calculate confusion matrix, save neural network'''
+
+    input_train, output_train, input_dev, output_dev, input_test, output_test, label_subst = embeddings
     ## Training options:
     ## 1.) use 90% training set to train, use remaining 10% to validate, use test set to test
     #split_point = int(len(input_train)*0.9)

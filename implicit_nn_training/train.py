@@ -19,14 +19,15 @@ DBUG = True
 if DBUG:
     print("WARNING! DEVELOPMENT MODE")
 
-def combination(name, args):
+def combination(trainpath, devpath, testpath, args):
     # example for parameter (learning_rate, min_improvement, method are fix in this code)
     parameter = [(0.1, 95, "prelu", "l2", 0.0001, "l1", 0.1), (0.3, 100, "prelu", "l2", 0.0001, "l2", 0.1 ),
                  (0.35, 95, "rect:max", "l1", 0.0001, "l1", 0.1), (0.35, 95, "prelu", "l2", 0.0001, "l1", 0.1),
                  (0.35, 100, "prelu", "l2", 0.0001, "l1", 0.1), (0.4, 80, "prelu", "l2", 0.0001, "l1", 0.1)]
-    nice = getNiceTempo()
-    os.makedirs("pickles/"+nice+"_"+name)
-    csvfile = open('pickles/'+ nice +'_'+ name + '/Results.csv', 'w')
+    current_time = getCurrentTime()
+    current_run_name = "%s_%s" % (current_time, args.name)
+    os.makedirs("pickles/"+current_run_name)
+    csvfile = open('pickles/'+ current_run_name + '/Results.csv', 'w')
     fieldnames = ['VectorTraining','NN Training', 'Test Acc', 'Valid Acc', 'Train Acc', "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
@@ -39,24 +40,17 @@ def combination(name, args):
         if DBUG:
             embeddings = restart()
         else:
-            # make sure we dont break paths with appending
-            testpath = args.test if args.test.endswith("/") else "%s/" % args.test
-            devpath = args.dev if args.dev.endswith("/") else "%s/" % args.dev
-            trainpath = args.train if args.train.endswith("/") else "%s/" % args.train
-
             embeddings = trainW.start_vectors("%sparses.json" % trainpath, "%sparses.json" % devpath,
                                               "%sparses.json" % testpath, "%srelations.json" % trainpath,
                                               "%srelations.json" % devpath, "%srelations.json" % testpath,
-                                              args.emb, nice + "_" + args.name, args.name)
-        input_train, output_train, input_dev, output_dev, _, _, label_subst = embeddings  # TODO: temporary call
+                                              args.emb, current_run_name, args.name)
         for iter2 in range(len(parameter)*5):
             #for each trained vectors train each NN parameter combination 5x
             if iter2%5 == 0:
                 triple = parameter[iter2//5]
             (acc, valid_acc, train_acc, report) = train_theanet('nag', 0.0001, triple[0],
                                                                              triple[4], triple[6],(triple[1],triple[2]), 0.001, 5,5, 
-                                                                             triple[3], triple[5], input_train, output_train, input_dev,
-                                                                             output_dev, label_subst, nice+"_"+name, str(counter_vec)+"_"+str(counter_nn))
+                                                                             triple[3], triple[5], embeddings, current_run_name, str(counter_vec)+"_"+str(counter_nn))
             writer.writerow({'VectorTraining': counter_vec ,'NN Training': counter_nn,  'Test Acc': round(acc*100,2), 'Valid Acc': round(valid_acc*100,2) , 
                    "Train Acc": round(train_acc*100,2), "MinImprov": 0.001, "Method": "nag", "LernR": 0.0001,"Momentum":triple[0], 
                    "Decay":"{0}={1}".format(triple[3], triple[4]), "Regular.": "{0}={1}".format(triple[5],triple[6]), "Hidden": 
@@ -66,10 +60,11 @@ def combination(name, args):
         counter_vec+=1
     csvfile.close()
 
-def grid(name, args):
-    nice = getNiceTempo()
-    os.makedirs("pickles/"+nice+"_"+name)
-    csvfile = open('pickles/'+ nice +'_'+ name + '/' + 'Results.csv', 'w')
+def grid(trainpath, devpath, testpath, args):
+    current_time = getCurrentTime()
+    current_run_name = "%s_%s" % (current_time, args.name)
+    os.makedirs("pickles/"+current_run_name)
+    csvfile = open('pickles/'+ current_run_name + '/' + 'Results.csv', 'w')
     fieldnames = ['Counter','Test Acc', 'Valid Acc', 'Train Acc', "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
@@ -77,16 +72,10 @@ def grid(name, args):
     if DBUG:
         embeddings = restart()
     else:
-        # make sure we dont break paths with appending
-        testpath = args.test if args.test.endswith("/") else "%s/" % args.test
-        devpath = args.dev if args.dev.endswith("/") else "%s/" % args.dev
-        trainpath = args.train if args.train.endswith("/") else "%s/" % args.train
-
         embeddings = trainW.start_vectors("%sparses.json" % trainpath, "%sparses.json" % devpath,
                                           "%sparses.json" % testpath, "%srelations.json" % trainpath,
                                           "%srelations.json" % devpath, "%srelations.json" % testpath,
-                                          args.emb, nice + "_" + args.name, args.name)
-    input_train, output_train, input_dev, output_dev, _, _, label_subst = embeddings # TODO: temporary call
+                                          args.emb, current_run_name, args.name)
     #different parameter options, e.g.:
     method = ['nag']
     min_improvements = [0.001]
@@ -125,8 +114,7 @@ def grid(name, args):
                             for n in w_h:
                                 for o in d_r:
                                     (acc, valid_acc, train_acc, report) = train_theanet(h, j, k, o[0], o[1], (l, m), i, 5,5, n[0], 
-                                                                                n[1], input_train, output_train, input_dev, 
-                                                                                output_dev, label_subst, nice+"_"+name, counter)
+                                                                                n[1], embeddings, current_run_name, counter)
                                     writer.writerow({'Counter': counter, 'Test Acc': round(acc*100,2), 'Valid Acc': round(valid_acc*100,2) , 
                                                      "Train Acc": round(train_acc*100,2),
                                                      "MinImprov": i, "Method": h, "LernR": j,
@@ -136,11 +124,12 @@ def grid(name, args):
                                     csvfile.flush()
     csvfile.close()
 
-def single(name, args):
+def single(trainpath, devpath, testpath, args):
     ''' train the neural network with a given parameter setting'''
-    nice = getNiceTempo()
-    os.makedirs("pickles/"+nice+"_"+name)
-    csvfile = open('pickles/'+ nice +'_'+ name + '/' + 'Results.csv', 'w')
+    current_time = getCurrentTime()
+    current_run_name = "%s_%s" % (current_time, args.name)
+    os.makedirs("pickles/"+current_run_name)
+    csvfile = open('pickles/'+ current_run_name + '/' + 'Results.csv', 'w')
     fieldnames = ['Test Acc', 'Valid Acc', 'Train Acc', "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
@@ -149,19 +138,14 @@ def single(name, args):
         embeddings = restart()
     else:
         # make sure we dont break paths with appending
-        testpath = args.test if args.test.endswith("/") else "%s/" % args.test
-        devpath = args.dev if args.dev.endswith("/") else "%s/" % args.dev
-        trainpath = args.train if args.train.endswith("/") else "%s/" % args.train
 
         embeddings = trainW.start_vectors("%sparses.json" % trainpath, "%sparses.json" % devpath,
                                           "%sparses.json" % testpath, "%srelations.json" % trainpath,
                                           "%srelations.json" % devpath, "%srelations.json" % testpath,
-                                          args.emb, nice+"_"+args.name, args.name)
-
-    input_train, output_train, input_dev, output_dev, _, _, label_subst = embeddings  # TODO: temporary call
+                                          args.emb, current_run_name, args.name)
     # train neural network
     method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'nag', 0.0001, 0.6, 0.0001, 0.0001, (60, 'lgrelu'), 0.001, 5, 5, "l1", "l2"
-    (acc, valid_acc, train_acc, report) = train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, input_train, output_train, input_dev, output_dev, label_subst, nice+"_"+name)
+    (acc, valid_acc, train_acc, report) = train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name)
     writer.writerow({'Test Acc': round(acc*100,2), 'Valid Acc': round(valid_acc*100,2), 
                                                      "Train Acc": round(train_acc*100,2),
                                                      "MinImprov": min_improvement, "Method": method, "LernR": learning_rate,
@@ -196,7 +180,7 @@ def import_pickle(path):
     (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
     return input_train, output_train, input_dev, output_dev, label_subst
 
-def getNiceTempo():
+def getCurrentTime():
     return datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
 if __name__ == "__main__":
@@ -213,18 +197,17 @@ if __name__ == "__main__":
                         help="what to test")
     parser.add_argument("--name", type=str)
     args = parser.parse_args()
+
+    #ensure we later don't break paths
+    args.test = args.test if args.test.endswith("/") else "%s/" % args.test
+    args.dev = args.dev if args.dev.endswith("/") else "%s/" % args.dev
+    args.train = args.train if args.train.endswith("/") else "%s/" % args.train
     if args.mode == "single":
-        single(args.name, args)
+        single(args.train, args.dev, args.test, args)
     elif args.mode == "grid":
-        grid(args.name, args)
+        grid(args.train, args.dev, args.test, args)
     elif args.mode == "combination":
-        combination(args.name, args)
+        combination(args.train, args.dev, args.test, args)
     else:
         print("Unknown args")
         sys.exit()
-    if sys.argv[1] == "single":
-        single(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
-    elif sys.argv[1] == "grid":
-        grid(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
-    elif sys.argv[1] == "combination":
-        combination(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
