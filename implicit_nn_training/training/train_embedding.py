@@ -32,9 +32,9 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
     # Initalize semantic model (with None data)
     if name == "m_1":
-        m = gensim.models.word2vec(None, size=300, window=8, min_count=3, workers=4, negative=10)
+        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=10)
     else:
-        m = gensim.models.word2vec(None, size=300, window=8, min_count=3, workers=4, negative=0)      
+        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=0)      
     print("Reading data...")
     # Load parse file
     check = [os.path.exists("pickles/relations_train.pickle"),
