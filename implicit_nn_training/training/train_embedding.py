@@ -20,16 +20,21 @@ import collections
 # TODO: play with word-vector embedding styles, add some conditional statements for different embeddings
 # TODO: experiment with negative sampling
 # TODO: play with aggregations, try to play with context with exponential decay
-# TODO: possibly try to play with doc2vec
 # TODO: add if statement in start_vector eg m_0 or m_1 for different models
+# TODO: m_0 -> negative sampling, m_1 -> aggregation, m_2 -> contexts, m_3 -> change structure
+# of word embeddings where they return tokens of implicit arguments, m_N* -> combinations
+# TODO: fix warning in gensim where supplied example does not match expected, perhaps related to m.corpus_count
+# TODO: remove test data from embedding tuning, affects writing data as well
 
 def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepath, relations_train_filepath,
-                  relations_dev_filepath, relations_test_filepath, googlevecs_filepath, direct, name = 0):
+                  relations_dev_filepath, relations_test_filepath, googlevecs_filepath, direct, name):
     """ train vectors """
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
     # Initalize semantic model (with None data)
-    m = gensim.models.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=5*0)
-    #m = gensim.models.Doc2Vec(None, size=300, window=8, min_count=3, workers=4, negative=5*0)
+    if name == "m_1":
+        m = gensim.models.word2vec(None, size=300, window=8, min_count=3, workers=4, negative=10)
+    else:
+        m = gensim.models.word2vec(None, size=300, window=8, min_count=3, workers=4, negative=0)      
     print("Reading data...")
     # Load parse file
     check = [os.path.exists("pickles/relations_train.pickle"),
@@ -46,12 +51,12 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
         print("Reading from source...")
         parses = json.load(open(parses_train_filepath))
         parses.update(json.load(open(parses_dev_filepath)))
-        parses.update(json.load(open(parses_test_filepath)))
+        parsesTest = json.load(open(parses_test_filepath))
         (relations_train, all_relations_train) = read_file(relations_train_filepath, parses)
         (relations_dev, all_relations_dev) = read_file(relations_dev_filepath, parses)
-        (relations_test, all_relations_test) = read_file(relations_test_filepath, parses)
-    relations = relations_train + relations_dev + relations_test
-    all_relations = all_relations_train + all_relations_dev + all_relations_test
+        (relations_test, all_relations_test) = read_file(relations_test_filepath, parsesTest)
+    relations = relations_train + relations_dev
+    all_relations = all_relations_train + all_relations_dev
     # Substitution dictionary for class labels to integers
     label_subst = dict([(y,x) for x,y in enumerate(set([r[0][0] for r in relations]))])
     print(("Label subst", label_subst))

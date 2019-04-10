@@ -10,7 +10,6 @@ import argparse
 
 # TODO: gensim runs on cpu -> optimize this for cluster
 # TODO: fix warnings of runs -> tupe seq indexing of multidim arrays, recall/f-score ill-defined for samples
-# TODO: fix warning in gensim where supplied example does not match expected, perhaps related to m.corpus_count
 
 def combination(trainpath, devpath, testpath, args):
     # example for parameter (learning_rate, min_improvement, method are fix in this code)
