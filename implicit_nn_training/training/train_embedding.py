@@ -23,8 +23,6 @@ import collections
 # TODO: add if statement in start_vector eg m_0 or m_1 for different models
 # TODO: m_0 -> negative sampling, m_1 -> aggregation, m_2 -> contexts, m_3 -> change structure
 # of word embeddings where they return tokens of implicit arguments, m_N* -> combinations
-# TODO: fix warning in gensim where supplied example does not match expected, perhaps related to m.corpus_count
-# TODO: remove test data from embedding tuning, affects writing data as well
 
 def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepath, relations_train_filepath,
                   relations_dev_filepath, relations_test_filepath, googlevecs_filepath, direct, name):
@@ -32,9 +30,9 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
     # Initalize semantic model (with None data)
     if name == "m_1":
-        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=10)
+        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=10, sg=1)
     else:
-        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=0)      
+        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=0, sg=1)
     print("Reading data...")
     # Load parse file
     check = [os.path.exists("pickles/relations_train.pickle"),
@@ -42,11 +40,10 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
             os.path.exists("pickles/relations_test.pickle"),
             os.path.exists("pickles/all_relations_train.pickle"),
             os.path.exists("pickles/all_relations_dev.pickle"),
-            os.path.exists("pickles/all_relations_test.pickle"),
             os.path.exists("pickles/parses.pickle")]
     if all(check):
         print("Reading from cache...")
-        relations_train, relations_dev, relations_test, all_relations_train, all_relations_dev, all_relations_test, parses = readDump()
+        relations_train, relations_dev, relations_test, all_relations_train, all_relations_dev, parses = readDump()
     else:
         print("Reading from source...")
         parses = json.load(open(parses_train_filepath))
@@ -73,7 +70,7 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
         m.train(ParseReader(parses), total_examples = m.corpus_count, epochs=m.epochs)
     # dump pickles to save basic data
     dump(direct, name, m, label_subst, relations_train, relations_dev, relations_test,
-         all_relations_train, all_relations_dev, all_relations_test, parses)
+         all_relations_train, all_relations_dev, parses)
     (input_train, output_train) = convert_relations(relations_train, label_subst, m)
     (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
     (input_test, output_test) = convert_relations(relations_test, label_subst, m)
@@ -95,16 +92,13 @@ def readDump():
     f = open("pickles/all_relations_dev.pickle", "rb")
     all_relations_dev = pickle.load(f)
     f.close()
-    f = open("pickles/all_relations_test.pickle", "rb")
-    all_relations_test = pickle.load(f)
-    f.close()
     f = open("pickles/parses.pickle", "rb")
     parses = pickle.load(f)
     f.close()
-    return relations_train, relations_dev, relations_test, all_relations_train, all_relations_dev, all_relations_test, parses
+    return relations_train, relations_dev, relations_test, all_relations_train, all_relations_dev, parses
 
 def dump(direct, name, m, label_subst, relations_train, relations_dev, relations_test,
-         all_relations_train, all_relations_dev, all_relations_test, parses):
+         all_relations_train, all_relations_dev, parses):
     if not os.path.exists("pickles"):
         os.makedirs("pickles")
     file = open("pickles/"+str(direct)+"/"+str(name)+".pickle", "wb")
@@ -133,10 +127,6 @@ def dump(direct, name, m, label_subst, relations_train, relations_dev, relations
     if not os.path.exists("pickles/all_relations_dev.pickle"):
         file_ls = open("pickles/all_relations_dev.pickle", "wb")
         pickle.dump(all_relations_dev, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/all_relations_test.pickle"):
-        file_ls = open("pickles/all_relations_test.pickle", "wb")
-        pickle.dump(all_relations_test, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
         file_ls.close()
     if not os.path.exists("pickles/parses.pickle"):
         file_ls = open("pickles/parses.pickle", "wb")
