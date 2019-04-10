@@ -49,7 +49,7 @@ def reclassify(inputfile, outputfile, parses_file):
           else:
               (relations_dev, all_relations_dev) = read_file_Org(inputfile, parses)
           (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
-       break    
+       break
     test_data = (input_dev, output_dev)
     #predict senses with network
     predicted_labels = network.predict(test_data[0])   
