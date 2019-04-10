@@ -59,6 +59,7 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
     print(("Label subst", label_subst))
     print("Build vocabulary...")
     m.build_vocab(RelReader(all_relations))
+    # m.build_vocab(ParseReader(parses))
     print("Reading pre-trained word vectors...")
     m.intersect_word2vec_format(googlevecs_filepath, binary=True)
     print("Training segment vectors...")
@@ -67,7 +68,8 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
         m.alpha = 0.01/(2**iter)
         m.min_alpha = 0.01/(2**(iter+1))
         print("Vector training iter", iter, m.alpha, m.min_alpha)
-        m.train(ParseReader(parses), total_examples = m.corpus_count, epochs=m.epochs)
+        #m.train(ParseReader(parses), total_examples = m.corpus_count, epochs=m.epochs)
+        m.train(RelReader(all_relations), total_examples = m.corpus_count, epochs=m.epochs)
     # dump pickles to save basic data
     dump(direct, name, m, label_subst, relations_train, relations_dev, relations_test,
          all_relations_train, all_relations_dev, parses)
