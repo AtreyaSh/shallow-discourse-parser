@@ -11,9 +11,6 @@ import pickle
 import datetime
 import argparse
 
-# TODO: gensim/theanets can run on cpu -> optimize this for cluster
-# TODO: fix warnings of runs -> tupe seq indexing of multidim arrays (internal theano issue)
-
 def combination(trainpath, devpath, testpath, args):
     # example for parameter (learning_rate, min_improvement, method are fix in this code)
     parameter = [(0.1, 95, "prelu", "l2", 0.0001, "l1", 0.1), (0.3, 100, "prelu", "l2", 0.0001, "l2", 0.1 ),
@@ -75,10 +72,10 @@ def grid(trainpath, devpath, testpath, args):
     min_improvements = [0.001]
     learning_rates = [0.0001]
     w_h = [('l2', 'l1'), ('l1', 'l2'), ('l2','l2'), ("l1", "l1")]
-    momentum_alts = [0.1, 0.2, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
-    hidden_alts = [60, 65, 70, 75, 80, 85, 90, 95, 100]
-    act_funcs = ['rect:max','prelu','lgrelu']
-    d_r = [(0.0001, 0.0001), (0.0001, 0.1)]
+    momentum_alts = [0.4, 0.6, 0.95]
+    hidden_alts = [60, 80, 100]
+    act_funcs = ['rect:max','lgrelu']
+    d_r = [(0.0001, 0.0001)]
     ## more parameter options, e.g.:
     #method = ['nag', 'sgd', 'rprop','rmsprop', 'adadelta', 'hf', 'sample','layerwise']
     #min_improvements = [0.001, 0.005, 0.1, 0.2]
