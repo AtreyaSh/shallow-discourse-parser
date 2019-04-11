@@ -19,9 +19,9 @@ from nltk.corpus import stopwords
 ####################################
 
 # TODO: gensim/theanets can run on cpu -> optimize these for cluster
-# TODO: add contextual information with exponential decay by default
+# TODO: copy over new contextual data into cluster
 # TODO: m_0 -> baseline, m_1 -> negative sampling, m_2 -> new aggregation function
-# m_3 -> excluding stop words, m_4 larger concat window, m_5 -> contexts with exponential decay, 
+# m_3 -> excluding stop words, m_4 larger concat window, m_5 -> contexts with exponential decay,
 # m_N* -> combinations
 
 def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepath, relations_train_filepath,
@@ -84,6 +84,10 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
         (input_train, output_train) = convert_relations_modified_m_4(relations_train, label_subst, m)
         (input_dev, output_dev) = convert_relations_modified_m_4(relations_dev, label_subst, m)
         (input_test, output_test) = convert_relations_modified_m_4(relations_test, label_subst, m)
+    elif name == "m_5":
+        (input_train, output_train) = convert_relations_modified_m_5(relations_train, label_subst, m)
+        (input_dev, output_dev) = convert_relations_modified_m_5(relations_dev, label_subst, m)
+        (input_test, output_test) = convert_relations_modified_m_5(relations_test, label_subst, m)
     else:
         (input_train, output_train) = convert_relations(relations_train, label_subst, m)
         (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
@@ -338,11 +342,67 @@ def convert_relations_modified_m_4(relations, label_subst, m):
     outputs = outputs.astype(np.int32)
     return (inputs, outputs)
 
+def convert_relations_modified_m_5(relations, label_subst, m):
+    inputs = []
+    outputs = []
+    # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
+    for i, rel in enumerate(relations):
+        senses, arg1, arg2, context = rel
+        if i % 1000 == 0:
+            print(("Converting relation",i))
+        for sense in [senses[0]]:
+            # 1. Get weighted token vectors for arg1
+            tokens1 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg1]
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens1 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens1 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec1 = np.array(list(map(np.average, vecs)))
+            vec1prod = np.array(list(map(np.prod, vecs)))
+            # 2. Get weighted vectors for tokens in context (before arg1)
+            tokens1 = [(token, 1./(4**depth)) if depth is not None else (token, 0.25) for token, depth in context[0]]
+            context1 = np.transpose([m.wv[t]*w for t,w in tokens1 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens1 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(context1) == 0:
+                context1avg = vec1*0
+            else:
+                context1avg = np.array(list(map(np.average, context1)))
+            # 3. Get weighted token vectors for arg2
+            tokens2 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg2]
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens2 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens2 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec2 = np.array(list(map(np.average, vecs)))
+            vec2prod = np.array(list(map(np.prod, vecs)))
+            # 4. Get vectors for tokens in context (after arg2)
+            tokens2 = [(token, 1./(4**depth)) if depth is not None else (token, 0.25) for token, depth in context[1]]
+            context2 = np.transpose([m.wv[t]*w for t,w in tokens2 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens2 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(context2) == 0:
+                context2avg = vec2*0
+            else:
+                context2avg = np.array(list(map(np.average, context2)))
+            # 5. add and concatenate final vector
+            final = np.concatenate([np.add(vec1prod,vec1,context1avg), np.add(vec2prod,vec2,context2avg)])
+            if len(final) == 2*len(m.wv['a']):
+                inputs.append(final)
+            else:
+                print(("Warning: rel %d has length %d" % (i, len(final))))
+                if len(vec1) == 0:
+                    print(("arg1", arg1))
+                if len(vec2) == 0:
+                    print(("arg2", arg2))
+                break
+            outputs.append(np.array(label_subst[sense]))
+    ## Theanets training from this point on
+    inputs = np.array(inputs)
+    inputs = inputs.astype(np.float32)
+    outputs = np.array(outputs)
+    outputs = outputs.astype(np.int32)
+    return (inputs, outputs)
+
 ####################################
 # read/combine PDTB data (syntactic)
 ####################################
 
-def read_file(filename, parses):
+def read_file(filename, parses, context_size = 1):
     """ Read relation data from JSON """
     relations = []
     all_relations = []
@@ -351,7 +411,7 @@ def read_file(filename, parses):
         doc = parses[rel['DocID']]
         arg1 = get_token_depths(rel['Arg1'], doc)
         arg2 = get_token_depths(rel['Arg2'], doc)
-        context = None #get_context(rel, doc, context_size=1)
+        context = get_context(rel, doc, context_size)
         # Use for word vector training
         all_relations.append((rel['Sense'], arg1, arg2))
         # Use for prediction (implicit relations only)
@@ -424,21 +484,25 @@ def get_token_depths(arg, doc):
 # context of arguments
 ####################################
 
-# TODO: get context with token depths for weighting
-# apply exponential decay to these tokens
-# try this line by line to get proper context
-# prevent double counting of actual arguments
-
-def get_context(rel, doc, context_size=2):
+def get_context(rel, doc, context_size=1):
     """ Get tokens from context sentences of arguments """
     pretext, posttext = [], []
+    depths = {}
     for context_i in reversed(list(range(context_size+1))):
         _, _, _, sent_i, _ = rel['Arg1']['TokenList'][0]
-        for token_i, token in enumerate(doc['sentences'][sent_i-context_i]['words']):
-            token, _ = token
-            if context_i == 0 and token_i >= rel['Arg1']['TokenList'][0][-1]:
-                break
-            pretext.append(token)
+        try:
+            for token_i, token in enumerate(doc['sentences'][sent_i-context_i]['words']):
+                token, _ = token
+                if context_i == 0 and token_i >= rel['Arg1']['TokenList'][0][-1]:
+                    break
+                if sent_i-context_i not in depths:
+                    depths[sent_i-context_i] = dict(traverse(build_tree(doc['sentences'][sent_i-context_i]['dependencies'])))
+                try:
+                    pretext.append((token, depths[sent_i-context_i][token+'-'+str(token_i+1)]))
+                except KeyError:
+                    pretext.append((token, None))
+        except IndexError:
+            pass
     for context_i in range(context_size+1):
         _, _, _, sent_i, _ = rel['Arg2']['TokenList'][-1]
         try:
@@ -446,7 +510,12 @@ def get_context(rel, doc, context_size=2):
                 token, _ = token
                 if context_i == 0 and token_i <= rel['Arg2']['TokenList'][-1][-1]:
                     continue
-                posttext.append(token)
+                if sent_i+context_i not in depths:
+                    depths[sent_i+context_i] = dict(traverse(build_tree(doc['sentences'][sent_i+context_i]['dependencies'])))
+                try:
+                    posttext.append((token, depths[sent_i+context_i][token+'-'+str(token_i+1)]))
+                except KeyError:
+                    posttext.append((token, None))
         except IndexError:
             pass
     return (pretext, posttext)
