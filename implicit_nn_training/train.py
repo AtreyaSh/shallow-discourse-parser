@@ -72,11 +72,11 @@ def grid(trainpath, devpath, testpath, args):
     #different parameter options, e.g.:
     method = ['adam', 'sgd', 'nag']
     min_improvements = [0.001]
-    learning_rates = [0.0001]
+    learning_rates = [0.0001, 0.001]
     w_h = [("l1", "l1")]
     momentum_alts = [0.1, 0.2, 0.3, 0.35, 0.4]
     hidden_alts = [60, 65, 70, 75, 80, 85, 90, 95, 100]
-    act_funcs = ['rect:max','prelu','lgrelu']
+    act_funcs = ['relu','softmax','elu', 'tanh', 'sigmoid']
     d_r = [(0.0001, 0.0001), (0.0001, 0.1)]
     ## more parameter options, e.g.:
     #method = ['nag', 'sgd', 'rprop','rmsprop', 'adadelta', 'hf', 'sample','layerwise']

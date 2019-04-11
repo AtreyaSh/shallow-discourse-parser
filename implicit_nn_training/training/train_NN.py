@@ -21,7 +21,7 @@ def create_model(depth, hidden_nodes, activation_hidden, activation_output, outp
         output = Dense(output_shape, activation = activation_output)(inlayer)
         model = Model(inputs = inlayer, outputs = output)
         return model
-    elif depth = 2:
+    elif depth == 2:
         hidden = Dense(hidden_nodes, activation = activation_hidden)(inlayer)
         output = Dense(output_shape, activation = activation_output)(hidden)
         model = Model(inputs = inlayer, outputs = output)
@@ -59,7 +59,7 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     output_dev = np_utils.to_categorical(output_dev, num_classes=num_classes)
     output_test = np_utils.to_categorical(output_test, num_classes=num_classes) 
     
-    for nexp in range(5):
+    for nexp in range(1):
         best_eval, best_eval_test = 0, 0
         inlayer = Input((input_dev.shape[1],))
         # TODO: Activation function
@@ -71,7 +71,7 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
         # TODO: patience
         # TODO: weight lx
         # TODO: hiddenlx
-        model = create_model(2, hidden[1], hidden[0], 'softmax')
+        model = create_model(2, hidden[0], hidden[1], 'softmax', num_classes, input_train.shape[1])
         opt = create_optimizer(method, learning_rate, momentum, decay)
         
         # Early stopping monitors the development of loss and aborts the training if it starts
@@ -82,7 +82,6 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                         min_delta = min_improvement,
                         verbose=0)
 
-        model = Model(inputs = inlayer, outputs = output)
         model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
         for epoch in range(25):
             _ = model.fit(input_train, output_train, 
