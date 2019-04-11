@@ -11,12 +11,7 @@ import argparse
 DBUG = True
 # TODO: gensim runs on cpu -> optimize this for cluster
 # TODO: fix warnings of runs -> tupe seq indexing of multidim arrays, recall/f-score ill-defined for samples
-<<<<<<< HEAD
-# TODO: figure out how dev/test/blind works in their paper
-# TODO: in predict code, add ability to re-compute and get accuracy
-=======
 # TODO: fix warning in gensim where supplied example does not match expected, perhaps related to m.corpus_count
->>>>>>> master
 
 def combination(trainpath, devpath, testpath, args):
     # example for parameter (learning_rate, min_improvement, method are fix in this code)
@@ -75,11 +70,11 @@ def grid(trainpath, devpath, testpath, args):
                                           "%srelations.json" % devpath, "%srelations.json" % testpath,
                                           args.emb, current_run_name, args.name)
     #different parameter options, e.g.:
-    method = ['nag']
+    method = ['adam', 'sgd', 'nag']
     min_improvements = [0.001]
     learning_rates = [0.0001]
-    w_h = [('l2', 'l1'), ('l1', 'l2'), ('l2','l2'), ("l1", "l1")]
-    momentum_alts = [0.1, 0.2, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+    w_h = [("l1", "l1")]
+    momentum_alts = [0.1, 0.2, 0.3, 0.35, 0.4]
     hidden_alts = [60, 65, 70, 75, 80, 85, 90, 95, 100]
     act_funcs = ['rect:max','prelu','lgrelu']
     d_r = [(0.0001, 0.0001), (0.0001, 0.1)]

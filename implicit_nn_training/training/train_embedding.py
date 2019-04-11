@@ -67,11 +67,10 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
         print("Vector training iter", iter, m.alpha, m.min_alpha)
         m.train(ParseReader(parses), total_examples = m.corpus_count, epochs=m.epochs)
     # dump pickles to save basic data
-    dump(direct, name, m, label_subst, relations_train, relations_dev, relations_test,
-         all_relations_train, all_relations_dev, all_relations_test, parses)
     (input_train, output_train) = convert_relations(relations_train, label_subst, m)
     (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
     (input_test, output_test) = convert_relations(relations_test, label_subst, m)
+    dump(label_subst, input_train, output_train, input_dev, output_dev, input_test, output_test)
     return input_train, output_train, input_dev, output_dev, input_test, output_test ,label_subst
 
 def readDump():
@@ -98,14 +97,9 @@ def readDump():
     f.close()
     return relations_train, relations_dev, relations_test, all_relations_train, all_relations_dev, all_relations_test, parses
 
-def dump(direct, name, m, label_subst, relations_train, relations_dev, relations_test,
-         all_relations_train, all_relations_dev, all_relations_test, parses):
+def dump(label_subst, input_train, output_train, input_dev, output_dev, input_test, output_test):
     if not os.path.exists("pickles"):
         os.makedirs("pickles")
-<<<<<<< HEAD
-    (input_train, output_train) = convert_relations(relations_train, label_subst, m)
-    (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
-    (input_test, output_test) = convert_relations(relations_test, label_subst, m)
     if not os.path.exists("pickles/input_train.pickle"):
         with open("pickles/input_train.pickle", 'wb') as f:
             pickle.dump(input_train, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -127,45 +121,6 @@ def dump(direct, name, m, label_subst, relations_train, relations_dev, relations
     if not os.path.exists("pickles/label_subst.pickle"):
         with open("pickles/label_subst.pickle", 'wb') as f:
             pickle.dump(label_subst, f, protocol=pickle.HIGHEST_PROTOCOL)
-    return input_train, output_train, input_dev, output_dev, input_test, output_test, label_subst
-=======
-    file = open("pickles/"+str(direct)+"/"+str(name)+".pickle", "wb")
-    pickle.dump(m, file, protocol=pickle.HIGHEST_PROTOCOL)
-    file.close()
-    if not os.path.exists("pickles/"+str(direct)+"/label_subst.pickle"):
-        file_ls = open("pickles/"+str(direct)+"/label_subst.pickle", "wb")
-        pickle.dump(label_subst, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/relations_train.pickle"):
-        file_ls = open("pickles/relations_train.pickle", "wb")
-        pickle.dump(relations_train, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/relations_dev.pickle"):
-        file_ls = open("pickles/relations_dev.pickle", "wb")
-        pickle.dump(relations_dev, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/relations_test.pickle"):
-        file_ls = open("pickles/relations_test.pickle", "wb")
-        pickle.dump(relations_test, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/all_relations_train.pickle"):
-        file_ls = open("pickles/all_relations_train.pickle", "wb")
-        pickle.dump(all_relations_train, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/all_relations_dev.pickle"):
-        file_ls = open("pickles/all_relations_dev.pickle", "wb")
-        pickle.dump(all_relations_dev, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/all_relations_test.pickle"):
-        file_ls = open("pickles/all_relations_test.pickle", "wb")
-        pickle.dump(all_relations_test, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/parses.pickle"):
-        file_ls = open("pickles/parses.pickle", "wb")
-        pickle.dump(parses, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    return None
->>>>>>> master
 
 def convert_relations(relations, label_subst, m):
     inputs = []

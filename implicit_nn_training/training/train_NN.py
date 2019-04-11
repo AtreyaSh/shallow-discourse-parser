@@ -13,12 +13,28 @@ from keras import optimizers
 # TODO: Implement own f1
 
 
+def create_model(depth, hidden_nodes, activation_hidden, activation_output, output_shape,
+                input_shape):
+    """Creates the model based on inputs. Nothing special just cleanup"""
+    inlayer = Input((input_shape,))
+    if depth == 1:
+        output = Dense(output_shape, activation = activation_output)(inlayer)
+        model = Model(inputs = inlayer, outputs = output)
+        return model
+    elif depth = 2:
+        hidden = Dense(hidden_nodes, activation = activation_hidden)(inlayer)
+        output = Dense(output_shape, activation = activation_output)(hidden)
+        model = Model(inputs = inlayer, outputs = output)
+        return model
+    
 def create_optimizer(method, learning_rate, momentum, decay):
     """Creates the optimizing function based on training arguments"""
     if method == "nag":
         return optimizers.SGD(lr = learning_rate, momentum=momentum, decay = decay, nesterov = True)
     elif method == "sgd":
         return optimizers.SGD(lr = learning_rate, momentum=momentum, decay = decay)
+    elif method == "adam":
+        return optimizers.adam(lr = learning_rate)
     else:
         return optimizers.adam(lr = learning_rate)
 
@@ -55,7 +71,7 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
         # TODO: patience
         # TODO: weight lx
         # TODO: hiddenlx
-        output = Dense(output_train.shape[1], activation = 'relu')(inlayer)
+        model = create_model(2, hidden[1], hidden[0], 'softmax')
         opt = create_optimizer(method, learning_rate, momentum, decay)
         
         # Early stopping monitors the development of loss and aborts the training if it starts
@@ -64,16 +80,16 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                         patience=patience,
                         mode='min',
                         min_delta = min_improvement,
-                        verbose=1)
+                        verbose=0)
 
         model = Model(inputs = inlayer, outputs = output)
         model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
-        
         for epoch in range(25):
             _ = model.fit(input_train, output_train, 
                         epochs = epoch +1, 
                         batch_size = 80,
-                        verbose = 1,
+                        validation_data = (input_dev, output_dev),
+                        verbose = 0,
                         callbacks = [es],
                         initial_epoch = epoch)
             if epoch % validate_every == 0:
@@ -89,6 +105,8 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                     best_val = dev_scores[1]
         accs.append(test_scores[0])
         dev_accs.append(dev_scores[0])
+
+        del model # Reset
 
     # confmx = confusion_matrix(exp.network.predict(test_data[0]), test_data[1])
     # acc = float(sum(np.diag(confmx)))/sum(sum(confmx))
