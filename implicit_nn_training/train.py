@@ -91,7 +91,6 @@ def grid(trainpath, devpath, testpath, args):
     #             'relu','rect:min', 'rect:max',
     #             'norm:mean','norm:max', 'norm:std',
     #             'norm:z', 'prelu','lgrelu']
-
     #decay = [0.0001, 0.1, 0.2, 0.5]
     #regularization = [0.0001, 0.1, 0.2, 0.5]
     #d_r = []

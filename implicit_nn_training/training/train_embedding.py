@@ -12,14 +12,16 @@ import pickle
 import os
 import numpy as np
 import collections
+from nltk.corpus import stopwords
 
 ####################################
 # train word embeddings
 ####################################
 
 # TODO: play with aggregations, try to play with context with exponential decay
-# TODO: m_0 -> baseline, m_1 -> negative sampling, m_2 -> aggregation, m_3 -> contexts, m_4 -> change structure
-# of word embeddings where they return tokens of implicit arguments, m_N* -> combinations
+# TODO: m_0 -> baseline, m_1 -> negative sampling, m_2 -> stop-words, m_3 -> contexts with exponential decay
+# m_4 -> change structure of word embeddings where they return tokens of implicit arguments
+# m_N* -> combinations
 
 def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepath, relations_train_filepath,
                   relations_dev_filepath, relations_test_filepath, googlevecs_filepath, direct, name):
@@ -69,9 +71,14 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
     # dump pickles to save basic data
     dump(direct, name, m, label_subst, relations_train, relations_dev, relations_test,
          all_relations_train, all_relations_dev, parses)
-    (input_train, output_train) = convert_relations(relations_train, label_subst, m)
-    (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
-    (input_test, output_test) = convert_relations(relations_test, label_subst, m)
+    if name == "m_2":
+        (input_train, output_train) = convert_relations_modified(relations_train, label_subst, m)
+        (input_dev, output_dev) = convert_relations_modified(relations_dev, label_subst, m)
+        (input_test, output_test) = convert_relations_modified(relations_test, label_subst, m)    
+    else:
+        (input_train, output_train) = convert_relations(relations_train, label_subst, m)
+        (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
+        (input_test, output_test) = convert_relations(relations_test, label_subst, m)
     return input_train, output_train, input_dev, output_dev, input_test, output_test ,label_subst
 
 def readDump():
@@ -135,40 +142,35 @@ def dump(direct, name, m, label_subst, relations_train, relations_dev, relations
 def convert_relations(relations, label_subst, m):
     inputs = []
     outputs = []
-    # rel_dict = collections.defaultdict(lambda: [])
     # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
     for i, rel in enumerate(relations):
         senses, arg1, arg2, context = rel
         if i % 1000 == 0:
             print(("Converting relation",i))
         for sense in [senses[0]]:
-            # avg = np.average([d for t, d in arg1 if d is not None])
             # Get tokens and weights
             tokens1 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg1]
             # Get weighted token vectors
-            vecs = np.transpose([m[t]*w for t,w in tokens1 if t in m] + [m[t.lower()]*w for t,w in tokens1 if t not in m and t.lower() in m])
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens1 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens1 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
             if len(vecs) == 0:
-                vecs = m['a']*0
+                vecs = m.wv['a']*0
             vec1 = np.array(list(map(np.average, vecs)))
             vec1prod = np.array(list(map(np.prod, vecs)))
             # Get vectors for tokens in context (before arg1)
-            """context1 = np.transpose([m[t] for t in context[0] if t in m] + [m[t.lower()] for t in context[0] if t not in m and t.lower() in m])
+            """context1 = np.transpose([m.wv[t] for t in context[0] if t in m] + [m.wv[t.lower()] for t in context[0] if t not in m and t.lower() in m])
             if len(context1) == 0:
                 context1avg = vec1*0
             else:
                 context1avg = np.array(map(np.average, context1))
             """
-            #max1 = np.array(map(max, vecs))
-            #min1 = np.array(map(min, vecs))
-            # avg = np.average([d for t, d in arg2 if d is not None])
             # Get tokens and weights
             tokens2 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg2]
             # Get weighted token vectors
-            vecs = np.transpose([m[t]*w for t,w in tokens2 if t in m] + [m[t.lower()]*w for t,w in tokens2 if t not in m and t.lower() in m])
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens2 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens2 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
             if len(vecs) == 0:
-                vecs = m['a']*0
+                vecs = m.wv['a']*0
             # Get vectors for tokens in context (after arg2)
-            """context2 = np.transpose([m[t] for t in context[1] if t in m] + [m[t.lower()] for t in context[1] if t not in m and t.lower() in m])
+            """context2 = np.transpose([m.wv[t] for t in context[1] if t in m] + [m.wv[t.lower()] for t in context[1] if t not in m and t.lower() in m])
             if len(context2) == 0:
                 context2avg = vec2*0
             else:
@@ -176,14 +178,8 @@ def convert_relations(relations, label_subst, m):
             """
             vec2 = np.array(list(map(np.average, vecs)))
             vec2prod = np.array(list(map(np.prod, vecs)))
-            #max2 = np.array(map(max, vecs))
-            #min2 = np.array(map(min, vecs))
-            #final = np.concatenate([vec1,max1,min1,vec2,max2,min2])
-            #final = np.concatenate([vec1,vec2])
-            ##final = np.concatenate([np.add(vec1prod,vec1), np.add(vec2prod,vec2), context1avg, context2avg])
             final = np.concatenate([np.add(vec1prod,vec1), np.add(vec2prod,vec2)])
-            #final = np.concatenate([vec1prod,vec1, vec2prod,vec2])
-            if len(final) == 2*len(m['a']):
+            if len(final) == 2*len(m.wv['a']):
                 inputs.append(final)
             else:
                 print(("Warning: rel %d has length %d" % (i, len(final))))
@@ -198,7 +194,55 @@ def convert_relations(relations, label_subst, m):
     inputs = inputs.astype(np.float32)
     outputs = np.array(outputs)
     outputs = outputs.astype(np.int32)
-    return (inputs, outputs) 
+    return (inputs, outputs)
+
+# TODO: maybe remove stop words since we really consider bag of word without sequence
+# TODO: add contextual information with exponential decay by default
+
+def convert_relations_modified(relations, label_subst, m):
+    inputs = []
+    outputs = []
+    stop = set(stopwords.words("english"))
+    # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
+    for i, rel in enumerate(relations):
+        senses, arg1, arg2, context = rel
+        if i % 1000 == 0:
+            print(("Converting relation",i))
+        for sense in [senses[0]]:
+            # Get tokens and weights for arg1
+            tokens1 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg1]
+            # Get weighted token vectors for arg1
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens1 if m.wv.__contains__(t) and t not in stop] + [m.wv[t.lower()]*w for t,w in tokens1 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower()) and t.lower() not in stop])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec1 = np.array(list(map(np.average, vecs)))
+            vec1prod = np.array(list(map(np.prod, vecs)))
+            # Get tokens and weights for arg2
+            tokens2 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg2]
+            # Get weighted token vectors for arg2
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens2 if m.wv.__contains__(t) and t not in stop] + [m.wv[t.lower()]*w for t,w in tokens2 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower()) and t.lower() not in stop])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec2 = np.array(list(map(np.average, vecs)))
+            vec2prod = np.array(list(map(np.prod, vecs)))
+            # compress vectors into combined vector
+            final = np.concatenate([np.add(vec1prod,vec1), np.add(vec2prod,vec2)])
+            if len(final) == 2*len(m.wv['a']):
+                inputs.append(final)
+            else:
+                print(("Warning: rel %d has length %d" % (i, len(final))))
+                if len(vec1) == 0:
+                    print(("arg1", arg1))
+                if len(vec2) == 0:
+                    print(("arg2", arg2))
+                break
+            outputs.append(np.array(label_subst[sense]))
+    # Theanets training from this point on
+    inputs = np.array(inputs)
+    inputs = inputs.astype(np.float32)
+    outputs = np.array(outputs)
+    outputs = outputs.astype(np.int32)
+    return (inputs, outputs)
 
 ####################################
 # read/combine PDTB data (syntactic)
