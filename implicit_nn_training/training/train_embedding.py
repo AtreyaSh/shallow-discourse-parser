@@ -20,9 +20,8 @@ from nltk.corpus import stopwords
 
 # TODO: gensim/theanets can run on cpu -> optimize these for cluster
 # TODO: add contextual information with exponential decay by default
-# take into account variation, concat everything into much larger vector
-# TODO: m_0 -> baseline, m_1 -> negative sampling, m_2 -> stop-words, m_3 -> contexts with exponential decay
-# m_4 -> change structure of word embeddings where they return tokens of implicit arguments
+# TODO: m_0 -> baseline, m_1 -> negative sampling, m_2 -> new aggregation function
+# m_3 -> excluding stop words, m_4 larger concat window, m_5 -> contexts with exponential decay, 
 # m_N* -> combinations
 
 def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepath, relations_train_filepath,
@@ -81,6 +80,10 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
         (input_train, output_train) = convert_relations_modified_m_3(relations_train, label_subst, m)
         (input_dev, output_dev) = convert_relations_modified_m_3(relations_dev, label_subst, m)
         (input_test, output_test) = convert_relations_modified_m_3(relations_test, label_subst, m)
+    elif name == "m_4":
+        (input_train, output_train) = convert_relations_modified_m_4(relations_train, label_subst, m)
+        (input_dev, output_dev) = convert_relations_modified_m_4(relations_dev, label_subst, m)
+        (input_test, output_test) = convert_relations_modified_m_4(relations_test, label_subst, m)
     else:
         (input_train, output_train) = convert_relations(relations_train, label_subst, m)
         (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
@@ -275,6 +278,50 @@ def convert_relations_modified_m_3(relations, label_subst, m):
             # compress vectors into combined vector
             final = np.concatenate([np.add(vec1prod,vec1), np.add(vec2prod,vec2)])
             if len(final) == 2*len(m.wv['a']):
+                inputs.append(final)
+            else:
+                print(("Warning: rel %d has length %d" % (i, len(final))))
+                if len(vec1) == 0:
+                    print(("arg1", arg1))
+                if len(vec2) == 0:
+                    print(("arg2", arg2))
+                break
+            outputs.append(np.array(label_subst[sense]))
+    # Theanets training from this point on
+    inputs = np.array(inputs)
+    inputs = inputs.astype(np.float32)
+    outputs = np.array(outputs)
+    outputs = outputs.astype(np.int32)
+    return (inputs, outputs)
+
+def convert_relations_modified_m_4(relations, label_subst, m):
+    inputs = []
+    outputs = []
+    # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
+    for i, rel in enumerate(relations):
+        senses, arg1, arg2, context = rel
+        if i % 1000 == 0:
+            print(("Converting relation",i))
+        for sense in [senses[0]]:
+            # Get tokens and weights for arg1
+            tokens1 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg1]
+            # Get weighted token vectors for arg1
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens1 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens1 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec1 = np.array(list(map(np.average, vecs)))
+            vec1Var = np.array(list(map(np.var, vecs)))
+            # Get tokens and weights for arg2
+            tokens2 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg2]
+            # Get weighted token vectors for arg2
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens2 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens2 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec2 = np.array(list(map(np.average, vecs)))
+            vec2Var = np.array(list(map(np.var, vecs)))
+            # compress vectors into combined vector
+            final = np.concatenate([vec1Var,vec1,vec2Var,vec2])
+            if len(final) == 4*len(m.wv['a']):
                 inputs.append(final)
             else:
                 print(("Warning: rel %d has length %d" % (i, len(final))))
