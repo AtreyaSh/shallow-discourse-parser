@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import training.train_embedding as trainW
 from training.train_embedding import convert_relations
 from training.train_NN import train_theanet
@@ -8,8 +11,8 @@ import pickle
 import datetime
 import argparse
 
-# TODO: gensim runs on cpu -> optimize this for cluster
-# TODO: fix warnings of runs -> tupe seq indexing of multidim arrays, recall/f-score ill-defined for samples
+# TODO: gensim/theanets can run on cpu -> optimize this for cluster
+# TODO: fix warnings of runs -> tupe seq indexing of multidim arrays (internal theano issue)
 
 def combination(trainpath, devpath, testpath, args):
     # example for parameter (learning_rate, min_improvement, method are fix in this code)
@@ -42,8 +45,8 @@ def combination(trainpath, devpath, testpath, args):
             (acc, valid_acc, train_acc, report) = train_theanet('nag', 0.0001, triple[0],
                                                                              triple[4], triple[6],(triple[1],triple[2]), 0.001, 5,5, 
                                                                              triple[3], triple[5], embeddings, current_run_name, str(counter_vec)+"_"+str(counter_nn))
-            writer.writerow({'VectorTraining': counter_vec ,'NN Training': counter_nn,  'Test Acc': round(acc*100,2), 'Valid Acc': round(valid_acc*100,2) , 
-                   "Train Acc": round(train_acc*100,2), "MinImprov": 0.001, "Method": "nag", "LernR": 0.0001,"Momentum":triple[0], 
+            writer.writerow({'VectorTraining': counter_vec ,'NN Training': counter_nn,  'Test Acc': round(acc*100,5), 'Valid Acc': round(valid_acc*100,5) , 
+                   "Train Acc": round(train_acc*100,5), "MinImprov": 0.001, "Method": "nag", "LernR": 0.0001,"Momentum":triple[0], 
                    "Decay":"{0}={1}".format(triple[3], triple[4]), "Regular.": "{0}={1}".format(triple[5],triple[6]), "Hidden": 
                    "({0}, {1})".format(triple[1],triple[2]),"Report":report})
             counter_nn+=1
@@ -106,8 +109,8 @@ def grid(trainpath, devpath, testpath, args):
                                 for o in d_r:
                                     (acc, valid_acc, train_acc, report) = train_theanet(h, j, k, o[0], o[1], (l, m), i, 5,5, n[0], 
                                                                                 n[1], embeddings, current_run_name, counter)
-                                    writer.writerow({'Counter': counter, 'Test Acc': round(acc*100,2), 'Valid Acc': round(valid_acc*100,2) , 
-                                                     "Train Acc": round(train_acc*100,2),
+                                    writer.writerow({'Counter': counter, 'Test Acc': round(acc*100,5), 'Valid Acc': round(valid_acc*100,5) , 
+                                                     "Train Acc": round(train_acc*100,5),
                                                      "MinImprov": i, "Method": h, "LernR": j,
                                                      "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
                                                      "Hidden": "({0}, {1})".format(l,m), "Report": report})
@@ -136,8 +139,8 @@ def single(trainpath, devpath, testpath, args):
     # train neural network
     method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'nag', 0.0001, 0.6, 0.0001, 0.0001, (60, 'lgrelu'), 0.001, 5, 5, "l1", "l2"
     (acc, valid_acc, train_acc, report) = train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name)
-    writer.writerow({'Test Acc': round(acc*100,2), 'Valid Acc': round(valid_acc*100,2), 
-                                                     "Train Acc": round(train_acc*100,2),
+    writer.writerow({'Test Acc': round(acc*100,5), 'Valid Acc': round(valid_acc*100,5), 
+                                                     "Train Acc": round(train_acc*100,5),
                                                      "MinImprov": min_improvement, "Method": method, "LernR": learning_rate,
                                                      "Momentum":momentum, "Decay":"{0}={1}".format(weight_lx, decay), "Regular.": "{0}={1}".format(hidden_lx, regularization),
                                                      "Hidden": "({0}, {1})".format(hidden[0],hidden[1]), 'Report': report})
