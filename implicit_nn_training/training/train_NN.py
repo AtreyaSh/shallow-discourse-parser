@@ -15,6 +15,17 @@ import warnings
 warnings.filterwarnings('ignore')
 # TODO: Implement own f1
 
+def evaluate_model(model, data):
+    evaluation = []
+    for x, y in data:
+        y_true = np.argmax(y, axis = 1)
+        y_pred = np.argmax(model.predict(x), axis = 1)
+        acc = accuracy_score(y_true, y_pred)
+        rec = recall_score(y_true, y_pred, average="weighted")
+        prec = precision_score(y_true, y_pred, average="weighted")
+        f1 = f1_score(y_true, y_pred, average="weighted")
+        evaluation.append((acc, rec, prec, f1))
+
 
 def create_model(depth, hidden_nodes, activation_hidden, activation_output, output_shape,
                 input_shape, drop = True):
@@ -56,7 +67,9 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                   min_improvement, validate_every, patience, weight_lx, hidden_lx,
                   embeddings, direct, name = 0, depth = 2):
     ''' train neural network, calculate confusion matrix, save neural network'''
-    input_train, output_train, input_dev, output_dev, input_test, output_test, label_subst = embeddings
+    #input_train, output_train, input_dev, output_dev, input_test, output_test, label_subst = embeddings
+    train, dev, test, label_subst = (embeddings[0], embeddings[1]), (embeddings[2], embeddings[3]), (embeddings[4], embeddings[5]), embeddings[6] # repackaging 
+
     ## Training options:
     ## 1.) use 90% training set to train, use remaining 10% to validate, use test set to test
     #split_point = int(len(input_train)*0.9)
@@ -64,19 +77,24 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     #valid_data = (input_train[split_point:], output_train[split_point:])
     #test_data = (input_dev, output_dev)
     ## 2.) use 100% training set to train, use test set to validate and to test
+    train_accs, dev_accs, test_accs = [], [], []
+    train_recs, dev_recs, test_recs = [], [], []
+    train_precs, dev_precs, test_precs = [], [], []
+    train_f1, dev_f1, test_f1 = [], [], []
+    
     accs = []
     f1s = []
     precs = []
     recs = []
-    output_train = np_utils.to_categorical(output_train, num_classes=None)
+    train[1] = np_utils.to_categorical(train[1], num_classes=None)
 
     # print(input_train.shape)
     # print(len(input_train[0]))
     # print(output_train.shape)
     # print(np.argmax(output_train, axis = 1))
     num_classes = output_train.shape[1]
-    output_dev = np_utils.to_categorical(output_dev, num_classes=num_classes)
-    output_test = np_utils.to_categorical(output_test, num_classes=num_classes) 
+    dev[1] = np_utils.to_categorical(dev[1], num_classes=num_classes)
+    test[1] = np_utils.to_categorical(test[1], num_classes=num_classes) 
     
     for nexp in range(1):
         best_acc, best_f1, best_prec, best_rec = 0, 0, 0, 0
@@ -110,11 +128,11 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
             if epoch % validate_every == 0: # TODO: this is wrong right?
                 print("\ttrain\tdev\ttest")
                 # scores are loss, acc, f1, recall, precision
-                train_scores = model.evaluate(input_train, output_train, verbose = 0, batch_size=80)
+                train_scores = model.evaluate(train[0], train[1], verbose = 0, batch_size=80)
                 print("acc.\t%.2f%%" % (train_scores[1]*100), end="", flush=True)
-                dev_scores = model.evaluate(input_dev, output_dev, batch_size = 80, verbose = 0)
+                dev_scores = model.evaluate(dev[0], dev[1], batch_size = 80, verbose = 0)
                 print("\t%.2f%%" % (dev_scores[1]*100), end="", flush=True)
-                test_scores = model.evaluate(input_test, output_test, verbose=0, batch_size= 80)
+                test_scores = model.evaluate(test[0], test[1], verbose=0, batch_size= 80)
                 print("\t%.2f%%" % (test_scores[1]*100), flush=True)
 
         # Done training, now compute acc, prec etc which only makes sense after training.
