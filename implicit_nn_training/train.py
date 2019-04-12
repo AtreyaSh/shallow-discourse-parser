@@ -60,7 +60,11 @@ def grid(trainpath, devpath, testpath, args):
     current_run_name = "%s_%s" % (current_time, args.name)
     os.makedirs("pickles/"+current_run_name)
     csvfile = open('pickles/'+ current_run_name + '/' + 'Results.csv', 'w')
+<<<<<<< Updated upstream
     fieldnames = ['Counter','Test Acc', 'Valid Acc', 'Train Acc', "Recall", "Precision", "F1" "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
+=======
+    fieldnames = ['Counter','Acc', 'Rec', 'Prec', "F1", "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden"]
+>>>>>>> Stashed changes
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.flush()
@@ -108,6 +112,7 @@ def grid(trainpath, devpath, testpath, args):
                         for m in act_funcs:
                             for n in w_h:
                                 for o in d_r:
+<<<<<<< Updated upstream
                                     for d in network_depth:            
                                         acc, valid_acc, train_acc, report, rec, prec, f1 = train_theanet(method=h, learning_rate=j, momentum=k, decay=o[0], regularization=o[1], 
                                                                                             hidden=(l, m), min_improvement=i, validate_every=5,patience=5, depth = d,
@@ -119,6 +124,17 @@ def grid(trainpath, devpath, testpath, args):
                                                         "Hidden": "({0}, {1})".format(l,m), "Report": report})
                                         counter += 1
                                         csvfile.flush()
+=======
+                                    (acc, rec, prec, f1) = train_theanet(h, j, k, o[0], o[1], (l, m), i, 5,5, n[0], 
+                                                                                n[1], embeddings, current_run_name, counter)
+                                    writer.writerow({'Counter': counter, 'Acc': round(acc*100,2), 'Rec': round(rec*100,2) , 
+                                                     "Prec": round(prec*100,2),
+                                                     "MinImprov": i, "Method": h, "LernR": j,
+                                                     "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
+                                                     "Hidden": "({0}, {1})".format(l,m), "F1": f1})
+                                    counter += 1
+                                    csvfile.flush()
+>>>>>>> Stashed changes
     csvfile.close()
 
 def single(trainpath, devpath, testpath, args):
