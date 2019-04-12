@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import training.train_embedding as trainW
 from training.train_embedding import convert_relations
 from training.train_NN import train_theanet
@@ -8,10 +11,9 @@ import pickle
 import datetime
 import argparse
 
-DBUG = True
-# TODO: gensim runs on cpu -> optimize this for cluster
-# TODO: fix warnings of runs -> tupe seq indexing of multidim arrays, recall/f-score ill-defined for samples
-# TODO: fix warning in gensim where supplied example does not match expected, perhaps related to m.corpus_count
+def create_training_parameters(parameter_lists):
+    """function that creates all possible parameter combinations"""
+    pass
 
 def combination(trainpath, devpath, testpath, args):
     # example for parameter (learning_rate, min_improvement, method are fix in this code)
@@ -44,8 +46,8 @@ def combination(trainpath, devpath, testpath, args):
             (acc, valid_acc, train_acc, report) = train_theanet('nag', 0.0001, triple[0],
                                                                              triple[4], triple[6],(triple[1],triple[2]), 0.001, 5,5, 
                                                                              triple[3], triple[5], embeddings, current_run_name, str(counter_vec)+"_"+str(counter_nn))
-            writer.writerow({'VectorTraining': counter_vec ,'NN Training': counter_nn,  'Test Acc': round(acc*100,2), 'Valid Acc': round(valid_acc*100,2) , 
-                   "Train Acc": round(train_acc*100,2), "MinImprov": 0.001, "Method": "nag", "LernR": 0.0001,"Momentum":triple[0], 
+            writer.writerow({'VectorTraining': counter_vec ,'NN Training': counter_nn,  'Test Acc': round(acc*100,5), 'Valid Acc': round(valid_acc*100,5) , 
+                   "Train Acc": round(train_acc*100,5), "MinImprov": 0.001, "Method": "nag", "LernR": 0.0001,"Momentum":triple[0], 
                    "Decay":"{0}={1}".format(triple[3], triple[4]), "Regular.": "{0}={1}".format(triple[5],triple[6]), "Hidden": 
                    "({0}, {1})".format(triple[1],triple[2]),"Report":report})
             counter_nn+=1
@@ -58,7 +60,7 @@ def grid(trainpath, devpath, testpath, args):
     current_run_name = "%s_%s" % (current_time, args.name)
     os.makedirs("pickles/"+current_run_name)
     csvfile = open('pickles/'+ current_run_name + '/' + 'Results.csv', 'w')
-    fieldnames = ['Counter','Test Acc', 'Valid Acc', 'Train Acc', "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
+    fieldnames = ['Counter','Test Acc', 'Valid Acc', 'Train Acc', "Recall", "Precision", "F1" "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.flush()
@@ -72,12 +74,13 @@ def grid(trainpath, devpath, testpath, args):
     #different parameter options, e.g.:
     method = ['adam', 'sgd', 'nag']
     min_improvements = [0.001]
-    learning_rates = [0.0001, 0.001]
-    w_h = [("l1", "l1")]
-    momentum_alts = [0.1, 0.2, 0.3, 0.35, 0.4]
-    hidden_alts = [60, 65, 70, 75, 80, 85, 90, 95, 100]
-    act_funcs = ['relu','softmax','elu', 'tanh', 'sigmoid']
-    d_r = [(0.0001, 0.0001), (0.0001, 0.1)]
+    learning_rates = [0.0001]
+    w_h = [('l2', 'l1'), ('l1', 'l2'), ('l2','l2'), ("l1", "l1")]
+    momentum_alts = [0.4, 0.6, 0.95]
+    hidden_alts = [60, 80, 100]
+    act_funcs = ['rect:max','lgrelu']
+    d_r = [(0.0001, 0.0001)]
+    network_depth = [2,3]
     ## more parameter options, e.g.:
     #method = ['nag', 'sgd', 'rprop','rmsprop', 'adadelta', 'hf', 'sample','layerwise']
     #min_improvements = [0.001, 0.005, 0.1, 0.2]
@@ -90,7 +93,6 @@ def grid(trainpath, devpath, testpath, args):
     #             'relu','rect:min', 'rect:max',
     #             'norm:mean','norm:max', 'norm:std',
     #             'norm:z', 'prelu','lgrelu']
-
     #decay = [0.0001, 0.1, 0.2, 0.5]
     #regularization = [0.0001, 0.1, 0.2, 0.5]
     #d_r = []
@@ -106,15 +108,17 @@ def grid(trainpath, devpath, testpath, args):
                         for m in act_funcs:
                             for n in w_h:
                                 for o in d_r:
-                                    (acc, valid_acc, train_acc, report) = train_theanet(h, j, k, o[0], o[1], (l, m), i, 5,5, n[0], 
-                                                                                n[1], embeddings, current_run_name, counter)
-                                    writer.writerow({'Counter': counter, 'Test Acc': round(acc*100,2), 'Valid Acc': round(valid_acc*100,2) , 
-                                                     "Train Acc": round(train_acc*100,2),
-                                                     "MinImprov": i, "Method": h, "LernR": j,
-                                                     "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
-                                                     "Hidden": "({0}, {1})".format(l,m), "Report": report})
-                                    counter += 1
-                                    csvfile.flush()
+                                    for d in network_depth:            
+                                        acc, valid_acc, train_acc, report, rec, prec, f1 = train_theanet(method=h, learning_rate=j, momentum=k, decay=o[0], regularization=o[1], 
+                                                                                            hidden=(l, m), min_improvement=i, validate_every=5,patience=5, depth = d,
+                                                                                            weight_lx=n[0], hidden_lx=n[1], embeddings=embeddings, direct=current_run_name, name=counter)
+                                        writer.writerow({'Counter': counter, 'Test Acc': round(acc*100,5), 'Valid Acc': round(valid_acc*100,5) , 
+                                                        "Train Acc": round(train_acc*100,5), "Precision": prec, "Recall" : rec,
+                                                        "MinImprov": i, "Method": h, "LernR": j, "F1" : f1
+                                                        "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
+                                                        "Hidden": "({0}, {1})".format(l,m), "Report": report})
+                                        counter += 1
+                                        csvfile.flush()
     csvfile.close()
 
 def single(trainpath, devpath, testpath, args):
@@ -138,8 +142,8 @@ def single(trainpath, devpath, testpath, args):
     # train neural network
     method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'nag', 0.0001, 0.6, 0.0001, 0.0001, (60, 'lgrelu'), 0.001, 5, 5, "l1", "l2"
     (acc, valid_acc, train_acc, report) = train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name)
-    writer.writerow({'Test Acc': round(acc*100,2), 'Valid Acc': round(valid_acc*100,2), 
-                                                     "Train Acc": round(train_acc*100,2),
+    writer.writerow({'Test Acc': round(acc*100,5), 'Valid Acc': round(valid_acc*100,5), 
+                                                     "Train Acc": round(train_acc*100,5),
                                                      "MinImprov": min_improvement, "Method": method, "LernR": learning_rate,
                                                      "Momentum":momentum, "Decay":"{0}={1}".format(weight_lx, decay), "Regular.": "{0}={1}".format(hidden_lx, regularization),
                                                      "Hidden": "({0}, {1})".format(hidden[0],hidden[1]), 'Report': report})
