@@ -11,6 +11,10 @@ import pickle
 import datetime
 import argparse
 
+def create_training_parameters(parameter_lists):
+    """function that creates all possible parameter combinations"""
+    pass
+
 def combination(trainpath, devpath, testpath, args):
     # example for parameter (learning_rate, min_improvement, method are fix in this code)
     parameter = [(0.1, 95, "prelu", "l2", 0.0001, "l1", 0.1), (0.3, 100, "prelu", "l2", 0.0001, "l2", 0.1 ),
@@ -56,7 +60,7 @@ def grid(trainpath, devpath, testpath, args):
     current_run_name = "%s_%s" % (current_time, args.name)
     os.makedirs("pickles/"+current_run_name)
     csvfile = open('pickles/'+ current_run_name + '/' + 'Results.csv', 'w')
-    fieldnames = ['Counter','Test Acc', 'Valid Acc', 'Train Acc', "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
+    fieldnames = ['Counter','Test Acc', 'Valid Acc', 'Train Acc', "Recall", "Precision", "F1" "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.flush()
@@ -76,6 +80,7 @@ def grid(trainpath, devpath, testpath, args):
     hidden_alts = [60, 80, 100]
     act_funcs = ['rect:max','lgrelu']
     d_r = [(0.0001, 0.0001)]
+    network_depth = [2,3]
     ## more parameter options, e.g.:
     #method = ['nag', 'sgd', 'rprop','rmsprop', 'adadelta', 'hf', 'sample','layerwise']
     #min_improvements = [0.001, 0.005, 0.1, 0.2]
@@ -103,15 +108,17 @@ def grid(trainpath, devpath, testpath, args):
                         for m in act_funcs:
                             for n in w_h:
                                 for o in d_r:
-                                    (acc, valid_acc, train_acc, report) = train_theanet(h, j, k, o[0], o[1], (l, m), i, 5,5, n[0], 
-                                                                                n[1], embeddings, current_run_name, counter)
-                                    writer.writerow({'Counter': counter, 'Test Acc': round(acc*100,5), 'Valid Acc': round(valid_acc*100,5) , 
-                                                     "Train Acc": round(train_acc*100,5),
-                                                     "MinImprov": i, "Method": h, "LernR": j,
-                                                     "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
-                                                     "Hidden": "({0}, {1})".format(l,m), "Report": report})
-                                    counter += 1
-                                    csvfile.flush()
+                                    for d in network_depth:            
+                                        acc, valid_acc, train_acc, report, rec, prec, f1 = train_theanet(method=h, learning_rate=j, momentum=k, decay=o[0], regularization=o[1], 
+                                                                                            hidden=(l, m), min_improvement=i, validate_every=5,patience=5, depth = d,
+                                                                                            weight_lx=n[0], hidden_lx=n[1], embeddings=embeddings, direct=current_run_name, name=counter)
+                                        writer.writerow({'Counter': counter, 'Test Acc': round(acc*100,5), 'Valid Acc': round(valid_acc*100,5) , 
+                                                        "Train Acc": round(train_acc*100,5), "Precision": prec, "Recall" : rec,
+                                                        "MinImprov": i, "Method": h, "LernR": j, "F1" : f1
+                                                        "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
+                                                        "Hidden": "({0}, {1})".format(l,m), "Report": report})
+                                        counter += 1
+                                        csvfile.flush()
     csvfile.close()
 
 def single(trainpath, devpath, testpath, args):

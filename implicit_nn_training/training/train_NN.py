@@ -8,7 +8,7 @@ import pickle
 
 def train_theanet(method, learning_rate, momentum, decay, regularization, hidden,
                   min_improvement, validate_every, patience, weight_lx, hidden_lx,
-                  embeddings, direct, name = 0):
+                  embeddings, direct, name = 0, depth = 2):
     ''' train neural network, calculate confusion matrix, save neural network'''
     input_train, output_train, input_dev, output_dev, input_test, output_test, label_subst = embeddings
     train_data = (input_train, output_train)
@@ -67,4 +67,4 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     file = open("pickles/"+str(direct)+"/neuralnetwork_"+str(name)+".pickle", "wb")
     pickle.dump(exp.network, file, protocol=pickle.HIGHEST_PROTOCOL)
     file.close()
-    return np.average(accs), np.average(valid_accs), np.average(train_accs), report
+    return np.average(accs), np.average(valid_accs), np.average(train_accs), report, 0,0,0
