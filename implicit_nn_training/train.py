@@ -114,7 +114,7 @@ def grid(trainpath, devpath, testpath, args):
                                                                                             weight_lx=n[0], hidden_lx=n[1], embeddings=embeddings, direct=current_run_name, name=counter)
                                         writer.writerow({'Counter': counter, 'Test Acc': round(acc*100,5), 'Valid Acc': round(valid_acc*100,5) , 
                                                         "Train Acc": round(train_acc*100,5), "Precision": prec, "Recall" : rec,
-                                                        "MinImprov": i, "Method": h, "LernR": j, "F1" : f1
+                                                        "MinImprov": i, "Method": h, "LernR": j, "F1" : f1,
                                                         "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
                                                         "Hidden": "({0}, {1})".format(l,m), "Report": report})
                                         counter += 1
