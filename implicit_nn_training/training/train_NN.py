@@ -11,6 +11,8 @@ from keras.regularizers import l2 # for keras 2
 from keras.utils import np_utils, plot_model
 from keras import optimizers
 from training import metrics as met
+import warnings
+warnings.filterwarnings('ignore')
 # TODO: Implement own f1
 
 
@@ -97,7 +99,7 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
         model.compile(loss='categorical_crossentropy', 
                     optimizer=opt, 
                     metrics=['accuracy'])
-        for epoch in range(1):
+        for epoch in range(50):
             _ = model.fit(input_train, output_train, 
                         epochs = epoch +1, 
                         batch_size = 80,
@@ -116,9 +118,9 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                 print("\t%.2f%%" % (test_scores[1]*100), flush=True)
 
         # Done training, now compute acc, prec etc which only makes sense after training.
-        y_pred = model.predict(input_train)
+        y_pred = model.predict(input_dev)
         y_pred = np.argmax(y_pred, axis=1)
-        y_true = np.argmax(output_train, axis = 1)
+        y_true = np.argmax(output_dev, axis = 1)
         print("Final\tAcc\tRec\tPrec\tF1")
         acc = accuracy_score(y_true, y_pred)
         rec = recall_score(y_true, y_pred, average='weighted')
