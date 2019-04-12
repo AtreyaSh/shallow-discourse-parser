@@ -12,24 +12,27 @@ import pickle
 import os
 import numpy as np
 import collections
+from nltk.corpus import stopwords
 
 ####################################
 # train word embeddings
 ####################################
 
-# TODO: play with word-vector embedding styles, add some conditional statements for different embeddings
-# TODO: experiment with negative sampling
-# TODO: play with aggregations, try to play with context with exponential decay
-# TODO: possibly try to play with doc2vec
-# TODO: add if statement in start_vector eg m_0 or m_1 for different models
+# TODO: gensim/theanets can run on cpu -> optimize these for cluster
+# TODO: copy over new contextual data into cluster
+# TODO: m_0 -> baseline, m_1 -> negative sampling, m_2 -> new aggregation function
+# m_3 -> excluding stop words, m_4 larger concat window, m_5 -> contexts with exponential decay,
+# m_N* -> combinations
 
 def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepath, relations_train_filepath,
-                  relations_dev_filepath, relations_test_filepath, googlevecs_filepath, direct, name = 0):
+                  relations_dev_filepath, relations_test_filepath, googlevecs_filepath, direct, name):
     """ train vectors """
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
     # Initalize semantic model (with None data)
-    m = gensim.models.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=5*0)
-    #m = gensim.models.Doc2Vec(None, size=300, window=8, min_count=3, workers=4, negative=5*0)
+    if name == "m_1":
+        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=10, sg=1)
+    else:
+        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=0, sg=1)
     print("Reading data...")
     # Load parse file
     check = [os.path.exists("pickles/relations_train.pickle"),
@@ -37,21 +40,20 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
             os.path.exists("pickles/relations_test.pickle"),
             os.path.exists("pickles/all_relations_train.pickle"),
             os.path.exists("pickles/all_relations_dev.pickle"),
-            os.path.exists("pickles/all_relations_test.pickle"),
             os.path.exists("pickles/parses.pickle")]
     if all(check):
         print("Reading from cache...")
-        relations_train, relations_dev, relations_test, all_relations_train, all_relations_dev, all_relations_test, parses = readDump()
+        relations_train, relations_dev, relations_test, all_relations_train, all_relations_dev, parses = readDump()
     else:
         print("Reading from source...")
         parses = json.load(open(parses_train_filepath))
         parses.update(json.load(open(parses_dev_filepath)))
-        parses.update(json.load(open(parses_test_filepath)))
+        parsesTest = json.load(open(parses_test_filepath))
         (relations_train, all_relations_train) = read_file(relations_train_filepath, parses)
         (relations_dev, all_relations_dev) = read_file(relations_dev_filepath, parses)
-        (relations_test, all_relations_test) = read_file(relations_test_filepath, parses)
-    relations = relations_train + relations_dev + relations_test
-    all_relations = all_relations_train + all_relations_dev + all_relations_test
+        (relations_test, all_relations_test) = read_file(relations_test_filepath, parsesTest)
+    relations = relations_train + relations_dev
+    all_relations = all_relations_train + all_relations_dev
     # Substitution dictionary for class labels to integers
     label_subst = dict([(y,x) for x,y in enumerate(set([r[0][0] for r in relations]))])
     print(("Label subst", label_subst))
@@ -65,12 +67,31 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
         m.alpha = 0.01/(2**iter)
         m.min_alpha = 0.01/(2**(iter+1))
         print("Vector training iter", iter, m.alpha, m.min_alpha)
-        m.train(ParseReader(parses), total_examples = m.corpus_count, epochs=m.epochs)
+        # m.train(ParseReader(parses), total_examples = m.corpus_count, epochs=m.epochs)
+        m.train(RelReader(all_relations), total_examples = m.corpus_count, epochs=m.epochs)
     # dump pickles to save basic data
-    (input_train, output_train) = convert_relations(relations_train, label_subst, m)
-    (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
-    (input_test, output_test) = convert_relations(relations_test, label_subst, m)
-    dump(label_subst, input_train, output_train, input_dev, output_dev, input_test, output_test)
+    dump(direct, name, m, label_subst, relations_train, relations_dev, relations_test,
+         all_relations_train, all_relations_dev, parses)
+    if name == "m_2":
+        (input_train, output_train) = convert_relations_modified_m_2(relations_train, label_subst, m)
+        (input_dev, output_dev) = convert_relations_modified_m_2(relations_dev, label_subst, m)
+        (input_test, output_test) = convert_relations_modified_m_2(relations_test, label_subst, m)
+    elif name == "m_3":
+        (input_train, output_train) = convert_relations_modified_m_3(relations_train, label_subst, m)
+        (input_dev, output_dev) = convert_relations_modified_m_3(relations_dev, label_subst, m)
+        (input_test, output_test) = convert_relations_modified_m_3(relations_test, label_subst, m)
+    elif name == "m_4":
+        (input_train, output_train) = convert_relations_modified_m_4(relations_train, label_subst, m)
+        (input_dev, output_dev) = convert_relations_modified_m_4(relations_dev, label_subst, m)
+        (input_test, output_test) = convert_relations_modified_m_4(relations_test, label_subst, m)
+    elif name == "m_5":
+        (input_train, output_train) = convert_relations_modified_m_5(relations_train, label_subst, m)
+        (input_dev, output_dev) = convert_relations_modified_m_5(relations_dev, label_subst, m)
+        (input_test, output_test) = convert_relations_modified_m_5(relations_test, label_subst, m)
+    else:
+        (input_train, output_train) = convert_relations(relations_train, label_subst, m)
+        (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
+        (input_test, output_test) = convert_relations(relations_test, label_subst, m)
     return input_train, output_train, input_dev, output_dev, input_test, output_test ,label_subst
 
 def readDump():
@@ -89,76 +110,80 @@ def readDump():
     f = open("pickles/all_relations_dev.pickle", "rb")
     all_relations_dev = pickle.load(f)
     f.close()
-    f = open("pickles/all_relations_test.pickle", "rb")
-    all_relations_test = pickle.load(f)
-    f.close()
     f = open("pickles/parses.pickle", "rb")
     parses = pickle.load(f)
     f.close()
-    return relations_train, relations_dev, relations_test, all_relations_train, all_relations_dev, all_relations_test, parses
+    return relations_train, relations_dev, relations_test, all_relations_train, all_relations_dev, parses
 
-def dump(label_subst, input_train, output_train, input_dev, output_dev, input_test, output_test):
+def dump(direct, name, m, label_subst, relations_train, relations_dev, relations_test,
+         all_relations_train, all_relations_dev, parses):
     if not os.path.exists("pickles"):
         os.makedirs("pickles")
-    if not os.path.exists("pickles/input_train.pickle"):
-        with open("pickles/input_train.pickle", 'wb') as f:
-            pickle.dump(input_train, f, protocol=pickle.HIGHEST_PROTOCOL)
-    if not os.path.exists("pickles/output_train.pickle"):
-        with open("pickles/output_train.pickle", 'wb') as f:
-            pickle.dump(output_train, f, protocol=pickle.HIGHEST_PROTOCOL)
-    if not os.path.exists("pickles/input_dev.pickle"):
-        with open("pickles/input_dev.pickle", 'wb') as f:
-            pickle.dump(input_dev, f, protocol=pickle.HIGHEST_PROTOCOL)
-    if not os.path.exists("pickles/output_dev.pickle"):
-        with open("pickles/output_dev.pickle", 'wb') as f:
-            pickle.dump(output_dev, f, protocol=pickle.HIGHEST_PROTOCOL)
-    if not os.path.exists("pickles/input_test.pickle"):
-        with open("pickles/input_test.pickle", 'wb') as f:
-            pickle.dump(input_test, f, protocol=pickle.HIGHEST_PROTOCOL)
-    if not os.path.exists("pickles/output_test.pickle"):
-        with open("pickles/output_test.pickle", 'wb') as f:
-            pickle.dump(output_test, f, protocol=pickle.HIGHEST_PROTOCOL)
-    if not os.path.exists("pickles/label_subst.pickle"):
-        with open("pickles/label_subst.pickle", 'wb') as f:
-            pickle.dump(label_subst, f, protocol=pickle.HIGHEST_PROTOCOL)
+    file = open("pickles/"+str(direct)+"/"+str(name)+".pickle", "wb")
+    pickle.dump(m, file, protocol=pickle.HIGHEST_PROTOCOL)
+    file.close()
+    if not os.path.exists("pickles/"+str(direct)+"/label_subst.pickle"):
+        file_ls = open("pickles/"+str(direct)+"/label_subst.pickle", "wb")
+        pickle.dump(label_subst, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+    if not os.path.exists("pickles/relations_train.pickle"):
+        file_ls = open("pickles/relations_train.pickle", "wb")
+        pickle.dump(relations_train, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+    if not os.path.exists("pickles/relations_dev.pickle"):
+        file_ls = open("pickles/relations_dev.pickle", "wb")
+        pickle.dump(relations_dev, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+    if not os.path.exists("pickles/relations_test.pickle"):
+        file_ls = open("pickles/relations_test.pickle", "wb")
+        pickle.dump(relations_test, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+    if not os.path.exists("pickles/all_relations_train.pickle"):
+        file_ls = open("pickles/all_relations_train.pickle", "wb")
+        pickle.dump(all_relations_train, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+    if not os.path.exists("pickles/all_relations_dev.pickle"):
+        file_ls = open("pickles/all_relations_dev.pickle", "wb")
+        pickle.dump(all_relations_dev, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+    if not os.path.exists("pickles/parses.pickle"):
+        file_ls = open("pickles/parses.pickle", "wb")
+        pickle.dump(parses, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+    return None
 
 def convert_relations(relations, label_subst, m):
     inputs = []
     outputs = []
-    # rel_dict = collections.defaultdict(lambda: [])
     # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
     for i, rel in enumerate(relations):
         senses, arg1, arg2, context = rel
         if i % 1000 == 0:
             print(("Converting relation",i))
         for sense in [senses[0]]:
-            # avg = np.average([d for t, d in arg1 if d is not None])
             # Get tokens and weights
             tokens1 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg1]
             # Get weighted token vectors
-            vecs = np.transpose([m[t]*w for t,w in tokens1 if t in m] + [m[t.lower()]*w for t,w in tokens1 if t not in m and t.lower() in m])
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens1 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens1 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
             if len(vecs) == 0:
-                vecs = m['a']*0
+                vecs = m.wv['a']*0
             vec1 = np.array(list(map(np.average, vecs)))
             vec1prod = np.array(list(map(np.prod, vecs)))
             # Get vectors for tokens in context (before arg1)
-            """context1 = np.transpose([m[t] for t in context[0] if t in m] + [m[t.lower()] for t in context[0] if t not in m and t.lower() in m])
+            """context1 = np.transpose([m.wv[t] for t in context[0] if t in m] + [m.wv[t.lower()] for t in context[0] if t not in m and t.lower() in m])
             if len(context1) == 0:
                 context1avg = vec1*0
             else:
                 context1avg = np.array(map(np.average, context1))
             """
-            #max1 = np.array(map(max, vecs))
-            #min1 = np.array(map(min, vecs))
-            # avg = np.average([d for t, d in arg2 if d is not None])
             # Get tokens and weights
             tokens2 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg2]
             # Get weighted token vectors
-            vecs = np.transpose([m[t]*w for t,w in tokens2 if t in m] + [m[t.lower()]*w for t,w in tokens2 if t not in m and t.lower() in m])
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens2 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens2 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
             if len(vecs) == 0:
-                vecs = m['a']*0
+                vecs = m.wv['a']*0
             # Get vectors for tokens in context (after arg2)
-            """context2 = np.transpose([m[t] for t in context[1] if t in m] + [m[t.lower()] for t in context[1] if t not in m and t.lower() in m])
+            """context2 = np.transpose([m.wv[t] for t in context[1] if t in m] + [m.wv[t.lower()] for t in context[1] if t not in m and t.lower() in m])
             if len(context2) == 0:
                 context2avg = vec2*0
             else:
@@ -166,14 +191,8 @@ def convert_relations(relations, label_subst, m):
             """
             vec2 = np.array(list(map(np.average, vecs)))
             vec2prod = np.array(list(map(np.prod, vecs)))
-            #max2 = np.array(map(max, vecs))
-            #min2 = np.array(map(min, vecs))
-            #final = np.concatenate([vec1,max1,min1,vec2,max2,min2])
-            #final = np.concatenate([vec1,vec2])
-            ##final = np.concatenate([np.add(vec1prod,vec1), np.add(vec2prod,vec2), context1avg, context2avg])
             final = np.concatenate([np.add(vec1prod,vec1), np.add(vec2prod,vec2)])
-            #final = np.concatenate([vec1prod,vec1, vec2prod,vec2])
-            if len(final) == 2*len(m['a']):
+            if len(final) == 2*len(m.wv['a']):
                 inputs.append(final)
             else:
                 print(("Warning: rel %d has length %d" % (i, len(final))))
@@ -188,13 +207,202 @@ def convert_relations(relations, label_subst, m):
     inputs = inputs.astype(np.float32)
     outputs = np.array(outputs)
     outputs = outputs.astype(np.int32)
-    return (inputs, outputs) 
+    return (inputs, outputs)
+
+def convert_relations_modified_m_2(relations, label_subst, m):
+    inputs = []
+    outputs = []
+    # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
+    for i, rel in enumerate(relations):
+        senses, arg1, arg2, context = rel
+        if i % 1000 == 0:
+            print(("Converting relation",i))
+        for sense in [senses[0]]:
+            # Get tokens and weights for arg1
+            tokens1 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg1]
+            # Get weighted token vectors for arg1
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens1 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens1 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec1 = np.array(list(map(np.average, vecs)))
+            vec1Var = np.array(list(map(np.var, vecs)))
+            # Get tokens and weights for arg2
+            tokens2 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg2]
+            # Get weighted token vectors for arg2
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens2 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens2 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec2 = np.array(list(map(np.average, vecs)))
+            vec2Var = np.array(list(map(np.var, vecs)))
+            # compress vectors into combined vector
+            final = np.concatenate([np.add(vec1Var,vec1), np.add(vec2Var,vec2)])
+            if len(final) == 2*len(m.wv['a']):
+                inputs.append(final)
+            else:
+                print(("Warning: rel %d has length %d" % (i, len(final))))
+                if len(vec1) == 0:
+                    print(("arg1", arg1))
+                if len(vec2) == 0:
+                    print(("arg2", arg2))
+                break
+            outputs.append(np.array(label_subst[sense]))
+    # Theanets training from this point on
+    inputs = np.array(inputs)
+    inputs = inputs.astype(np.float32)
+    outputs = np.array(outputs)
+    outputs = outputs.astype(np.int32)
+    return (inputs, outputs)
+
+def convert_relations_modified_m_3(relations, label_subst, m):
+    inputs = []
+    outputs = []
+    stop = set(stopwords.words("english"))
+    # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
+    for i, rel in enumerate(relations):
+        senses, arg1, arg2, context = rel
+        if i % 1000 == 0:
+            print(("Converting relation",i))
+        for sense in [senses[0]]:
+            # Get tokens and weights for arg1
+            tokens1 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg1]
+            # Get weighted token vectors for arg1
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens1 if m.wv.__contains__(t) and t not in stop] + [m.wv[t.lower()]*w for t,w in tokens1 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower()) and t.lower() not in stop])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec1 = np.array(list(map(np.average, vecs)))
+            vec1prod = np.array(list(map(np.prod, vecs)))
+            # Get tokens and weights for arg2
+            tokens2 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg2]
+            # Get weighted token vectors for arg2
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens2 if m.wv.__contains__(t) and t not in stop] + [m.wv[t.lower()]*w for t,w in tokens2 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower()) and t.lower() not in stop])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec2 = np.array(list(map(np.average, vecs)))
+            vec2prod = np.array(list(map(np.prod, vecs)))
+            # compress vectors into combined vector
+            final = np.concatenate([np.add(vec1prod,vec1), np.add(vec2prod,vec2)])
+            if len(final) == 2*len(m.wv['a']):
+                inputs.append(final)
+            else:
+                print(("Warning: rel %d has length %d" % (i, len(final))))
+                if len(vec1) == 0:
+                    print(("arg1", arg1))
+                if len(vec2) == 0:
+                    print(("arg2", arg2))
+                break
+            outputs.append(np.array(label_subst[sense]))
+    # Theanets training from this point on
+    inputs = np.array(inputs)
+    inputs = inputs.astype(np.float32)
+    outputs = np.array(outputs)
+    outputs = outputs.astype(np.int32)
+    return (inputs, outputs)
+
+def convert_relations_modified_m_4(relations, label_subst, m):
+    inputs = []
+    outputs = []
+    # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
+    for i, rel in enumerate(relations):
+        senses, arg1, arg2, context = rel
+        if i % 1000 == 0:
+            print(("Converting relation",i))
+        for sense in [senses[0]]:
+            # Get tokens and weights for arg1
+            tokens1 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg1]
+            # Get weighted token vectors for arg1
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens1 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens1 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec1 = np.array(list(map(np.average, vecs)))
+            vec1Var = np.array(list(map(np.var, vecs)))
+            # Get tokens and weights for arg2
+            tokens2 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg2]
+            # Get weighted token vectors for arg2
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens2 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens2 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec2 = np.array(list(map(np.average, vecs)))
+            vec2Var = np.array(list(map(np.var, vecs)))
+            # compress vectors into combined vector
+            final = np.concatenate([vec1Var,vec1,vec2Var,vec2])
+            if len(final) == 4*len(m.wv['a']):
+                inputs.append(final)
+            else:
+                print(("Warning: rel %d has length %d" % (i, len(final))))
+                if len(vec1) == 0:
+                    print(("arg1", arg1))
+                if len(vec2) == 0:
+                    print(("arg2", arg2))
+                break
+            outputs.append(np.array(label_subst[sense]))
+    # Theanets training from this point on
+    inputs = np.array(inputs)
+    inputs = inputs.astype(np.float32)
+    outputs = np.array(outputs)
+    outputs = outputs.astype(np.int32)
+    return (inputs, outputs)
+
+def convert_relations_modified_m_5(relations, label_subst, m):
+    inputs = []
+    outputs = []
+    # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
+    for i, rel in enumerate(relations):
+        senses, arg1, arg2, context = rel
+        if i % 1000 == 0:
+            print(("Converting relation",i))
+        for sense in [senses[0]]:
+            # 1. Get weighted token vectors for arg1
+            tokens1 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg1]
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens1 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens1 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec1 = np.array(list(map(np.average, vecs)))
+            vec1prod = np.array(list(map(np.prod, vecs)))
+            # 2. Get weighted vectors for tokens in context (before arg1)
+            tokens1 = [(token, 1./(4**depth)) if depth is not None else (token, 0.25) for token, depth in context[0]]
+            context1 = np.transpose([m.wv[t]*w for t,w in tokens1 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens1 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(context1) == 0:
+                context1avg = vec1*0
+            else:
+                context1avg = np.array(list(map(np.average, context1)))
+            # 3. Get weighted token vectors for arg2
+            tokens2 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg2]
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens2 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens2 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec2 = np.array(list(map(np.average, vecs)))
+            vec2prod = np.array(list(map(np.prod, vecs)))
+            # 4. Get vectors for tokens in context (after arg2)
+            tokens2 = [(token, 1./(4**depth)) if depth is not None else (token, 0.25) for token, depth in context[1]]
+            context2 = np.transpose([m.wv[t]*w for t,w in tokens2 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens2 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(context2) == 0:
+                context2avg = vec2*0
+            else:
+                context2avg = np.array(list(map(np.average, context2)))
+            # 5. add and concatenate final vector
+            final = np.concatenate([np.add(vec1prod,vec1,context1avg), np.add(vec2prod,vec2,context2avg)])
+            if len(final) == 2*len(m.wv['a']):
+                inputs.append(final)
+            else:
+                print(("Warning: rel %d has length %d" % (i, len(final))))
+                if len(vec1) == 0:
+                    print(("arg1", arg1))
+                if len(vec2) == 0:
+                    print(("arg2", arg2))
+                break
+            outputs.append(np.array(label_subst[sense]))
+    ## Theanets training from this point on
+    inputs = np.array(inputs)
+    inputs = inputs.astype(np.float32)
+    outputs = np.array(outputs)
+    outputs = outputs.astype(np.int32)
+    return (inputs, outputs)
 
 ####################################
 # read/combine PDTB data (syntactic)
 ####################################
 
-def read_file(filename, parses):
+def read_file(filename, parses, context_size = 1):
     """ Read relation data from JSON """
     relations = []
     all_relations = []
@@ -203,7 +411,7 @@ def read_file(filename, parses):
         doc = parses[rel['DocID']]
         arg1 = get_token_depths(rel['Arg1'], doc)
         arg2 = get_token_depths(rel['Arg2'], doc)
-        context = None #get_context(rel, doc, context_size=1)
+        context = get_context(rel, doc, context_size)
         # Use for word vector training
         all_relations.append((rel['Sense'], arg1, arg2))
         # Use for prediction (implicit relations only)
@@ -276,16 +484,25 @@ def get_token_depths(arg, doc):
 # context of arguments
 ####################################
 
-def get_context(rel, doc, context_size=2):
+def get_context(rel, doc, context_size=1):
     """ Get tokens from context sentences of arguments """
     pretext, posttext = [], []
+    depths = {}
     for context_i in reversed(list(range(context_size+1))):
         _, _, _, sent_i, _ = rel['Arg1']['TokenList'][0]
-        for token_i, token in enumerate(doc['sentences'][sent_i-context_i]['words']):
-            token, _ = token
-            if context_i == 0 and token_i >= rel['Arg1']['TokenList'][0][-1]:
-                break
-            pretext.append(token)
+        try:
+            for token_i, token in enumerate(doc['sentences'][sent_i-context_i]['words']):
+                token, _ = token
+                if context_i == 0 and token_i >= rel['Arg1']['TokenList'][0][-1]:
+                    break
+                if sent_i-context_i not in depths:
+                    depths[sent_i-context_i] = dict(traverse(build_tree(doc['sentences'][sent_i-context_i]['dependencies'])))
+                try:
+                    pretext.append((token, depths[sent_i-context_i][token+'-'+str(token_i+1)]))
+                except KeyError:
+                    pretext.append((token, None))
+        except IndexError:
+            pass
     for context_i in range(context_size+1):
         _, _, _, sent_i, _ = rel['Arg2']['TokenList'][-1]
         try:
@@ -293,7 +510,12 @@ def get_context(rel, doc, context_size=2):
                 token, _ = token
                 if context_i == 0 and token_i <= rel['Arg2']['TokenList'][-1][-1]:
                     continue
-                posttext.append(token)
+                if sent_i+context_i not in depths:
+                    depths[sent_i+context_i] = dict(traverse(build_tree(doc['sentences'][sent_i+context_i]['dependencies'])))
+                try:
+                    posttext.append((token, depths[sent_i+context_i][token+'-'+str(token_i+1)]))
+                except KeyError:
+                    posttext.append((token, None))
         except IndexError:
             pass
     return (pretext, posttext)
