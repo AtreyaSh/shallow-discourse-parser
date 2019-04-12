@@ -60,7 +60,7 @@ def grid(trainpath, devpath, testpath, args):
     current_run_name = "%s_%s" % (current_time, args.name)
     os.makedirs("pickles/"+current_run_name)
     csvfile = open('pickles/'+ current_run_name + '/' + 'Results.csv', 'w')
-    fieldnames = ['Counter','Test Acc', 'Valid Acc', 'Train Acc', "Recall", "Precision", "F1" "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
+    fieldnames = ['Counter','Test Acc', 'Valid Acc', 'Train Acc', "Recall", "Precision", "F1", "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.flush()
