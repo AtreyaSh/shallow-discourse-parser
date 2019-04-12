@@ -68,10 +68,10 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     recs = []
     output_train = np_utils.to_categorical(output_train, num_classes=None)
 
-    print(input_train.shape)
-    print(len(input_train[0]))
-    print(output_train.shape)
-    print(np.argmax(output_train, axis = 1))
+    # print(input_train.shape)
+    # print(len(input_train[0]))
+    # print(output_train.shape)
+    # print(np.argmax(output_train, axis = 1))
     num_classes = output_train.shape[1]
     output_dev = np_utils.to_categorical(output_dev, num_classes=num_classes)
     output_test = np_utils.to_categorical(output_test, num_classes=num_classes) 
@@ -79,13 +79,8 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     for nexp in range(1):
         best_acc, best_f1, best_prec, best_rec = 0, 0, 0, 0
         #inlayer = Input((input_dev.shape[1],))
-        # TODO: Activation function
-        # TODO: learning rate
-        # TODO: method
         # TODO: regularization
         # TODO: hidden
-        # TODO: min improvement
-        # TODO: patience
         # TODO: weight lx
         # TODO: hiddenlx
         model = create_model(2, hidden[0], hidden[1], 'softmax', num_classes, input_train.shape[1])
@@ -102,7 +97,7 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
         model.compile(loss='categorical_crossentropy', 
                     optimizer=opt, 
                     metrics=['accuracy'])
-        for epoch in range(5):
+        for epoch in range(1):
             _ = model.fit(input_train, output_train, 
                         epochs = epoch +1, 
                         batch_size = 80,
@@ -110,7 +105,7 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                         verbose = 0,
                         callbacks = [es],
                         initial_epoch = epoch)
-            if epoch % validate_every == 0:
+            if epoch % validate_every == 0: # TODO: this is wrong right?
                 print("\ttrain\tdev\ttest")
                 # scores are loss, acc, f1, recall, precision
                 train_scores = model.evaluate(input_train, output_train, verbose = 0, batch_size=80)
@@ -124,11 +119,16 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
         y_pred = model.predict(input_train)
         y_pred = np.argmax(y_pred, axis=1)
         y_true = np.argmax(output_train, axis = 1)
-
-        accs.append(accuracy_score(y_true, y_pred))
-        recs.append(recall_score(y_true, y_pred))
-        precs.append(precision_score(y_true, y_pred))
-        f1s.append(f1_score(y_true, y_pred, average='weighted'))
+        print("Final\tAcc\tRec\tPrec\tF1")
+        acc = accuracy_score(y_true, y_pred)
+        rec = recall_score(y_true, y_pred, average='weighted')
+        prec = precision_score(y_true, y_pred, average='weighted')
+        f1 = f1_score(y_true, y_pred, average='weighted')
+        print("\t%.4f\t%.4f\t%.4f\t%.4f" % (acc, rec, prec, f1))
+        accs.append(acc)
+        recs.append(rec)
+        precs.append(prec)
+        f1s.append(f1)
         del model # Reset
 
     # confmx = confusion_matrix(exp.network.predict(test_data[0]), test_data[1])
@@ -142,5 +142,5 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     # file = open("pickles/"+str(direct)+"/neuralnetwork_"+str(name)+".pickle", "wb")
     # pickle.dump(exp.network, file, protocol=pickle.HIGHEST_PROTOCOL)
     # file.close()
-    return np.average(accs),np.average(recs),np.average(precs),np.average(f1s)
+    return np.average(accs),0,0,0,np.average(recs),np.average(precs),np.average(f1s)
     # return np.average(accs), np.average(valid_accs), np.average(train_accs), report
