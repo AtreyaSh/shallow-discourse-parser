@@ -67,4 +67,4 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     file = open("pickles/"+str(direct)+"/neuralnetwork_"+str(name)+".pickle", "wb")
     pickle.dump(exp.network, file, protocol=pickle.HIGHEST_PROTOCOL)
     file.close()
-    return np.average(accs), np.average(valid_accs), np.average(train_accs), report, 0,0,0
+    return (np.average(accs), np.average(valid_accs), np.average(train_accs)), report, (0,0,0), (0,0,0), (0,0,0)
