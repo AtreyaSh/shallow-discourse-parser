@@ -117,8 +117,7 @@ def grid(trainpath, devpath, testpath, args):
                                                         'Test Recall': round(recs[0],5), 'Valid Recall': round(recs[1],5) , "Train Recall": round(recs[2],5), 
                                                         'Test Precision': round(precs[0],5), 'Valid Precision': round(precs[1],5) , "Train Precision": round(precs[2],5), 
                                                         'Test F1': round(f1s[0]*100,5), 'Valid F1': round(f1s[1],5) , "Train F1": round(f1s[2]*100,5), 
-                                                        "Precision": prec, "Recall" : rec,
-                                                        "MinImprov": i, "Method": h, "LernR": j, "F1" : f1,
+                                                        "MinImprov": i, "Method": h, "LernR": j,
                                                         "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
                                                         "Hidden": "({0}, {1})".format(l,m), "Report": report})
                                         counter += 1
