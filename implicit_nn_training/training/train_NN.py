@@ -10,22 +10,21 @@ from keras.callbacks import EarlyStopping
 from keras.regularizers import l2 # for keras 2
 from keras.utils import np_utils, plot_model
 from keras import optimizers
-from training import metrics as met
+from .metrics import Metrics
 import warnings
 warnings.filterwarnings('ignore')
 # TODO: Implement own f1
 
-def evaluate_model(model, data):
+def evaluate_model(model, data, accs, recs, precs, f1s):
+    """container for model evaluation, also to cleanup"""
     evaluation = []
-    for x, y in data:
-        y_true = np.argmax(y, axis = 1)
-        y_pred = np.argmax(model.predict(x), axis = 1)
-        acc = accuracy_score(y_true, y_pred)
-        rec = recall_score(y_true, y_pred, average="weighted")
-        prec = precision_score(y_true, y_pred, average="weighted")
-        f1 = f1_score(y_true, y_pred, average="weighted")
-        evaluation.append((acc, rec, prec, f1))
-
+    y_true = np.argmax(y, axis = 1)
+    y_pred = np.argmax(model.predict(x), axis = 1)
+    accs.append(accuracy_score(y_true, y_pred))
+    recs.append(recall_score(y_true, y_pred, average="weighted"))
+    precs.apennd(precision_score(y_true, y_pred, average="weighted"))
+    f1s.append(f1_score(y_true, y_pred, average="weighted"))
+    
 
 def create_model(depth, hidden_nodes, activation_hidden, activation_output, output_shape,
                 input_shape, drop = True):
@@ -67,9 +66,15 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                   min_improvement, validate_every, patience, weight_lx, hidden_lx,
                   embeddings, direct, name = 0, depth = 2):
     ''' train neural network, calculate confusion matrix, save neural network'''
-    #input_train, output_train, input_dev, output_dev, input_test, output_test, label_subst = embeddings
-    train, dev, test, label_subst = (embeddings[0], embeddings[1]), (embeddings[2], embeddings[3]), (embeddings[4], embeddings[5]), embeddings[6] # repackaging 
-
+    input_train, output_train, input_dev, output_dev, input_test, output_test, label_subst = embeddings
+    # print(output_train.shape)
+    # output_train = np_utils.to_categorical(output_train)
+    train = (input_train, np_utils.to_categorical(output_train, num_classes=None))
+    num_classes = train[1].shape[1]
+    dev = (input_dev, np_utils.to_categorical(output_dev, num_classes=num_classes))
+    test = (input_test, np_utils.to_categorical(output_test, num_classes=num_classes))
+    metrics = Metrics()
+    metrics.register_datasets(["train", "dev", "test"])
     ## Training options:
     ## 1.) use 90% training set to train, use remaining 10% to validate, use test set to test
     #split_point = int(len(input_train)*0.9)
@@ -77,33 +82,24 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     #valid_data = (input_train[split_point:], output_train[split_point:])
     #test_data = (input_dev, output_dev)
     ## 2.) use 100% training set to train, use test set to validate and to test
-    train_accs, dev_accs, test_accs = [], [], []
-    train_recs, dev_recs, test_recs = [], [], []
-    train_precs, dev_precs, test_precs = [], [], []
-    train_f1, dev_f1, test_f1 = [], [], []
-    
-    accs = []
-    f1s = []
-    precs = []
-    recs = []
-    train[1] = np_utils.to_categorical(train[1], num_classes=None)
+    # train[1] = np_utils.to_categorical(train[1], num_classes=None)
 
     # print(input_train.shape)
     # print(len(input_train[0]))
     # print(output_train.shape)
     # print(np.argmax(output_train, axis = 1))
-    num_classes = output_train.shape[1]
-    dev[1] = np_utils.to_categorical(dev[1], num_classes=num_classes)
-    test[1] = np_utils.to_categorical(test[1], num_classes=num_classes) 
+    # num_classes = output_train.shape[1]
+    # dev[1] = np_utils.to_categorical(dev[1], num_classes=num_classes)
+    # test[1] = np_utils.to_categorical(test[1], num_classes=num_classes) 
     
-    for nexp in range(1):
+    for nexp in range(5):
         best_acc, best_f1, best_prec, best_rec = 0, 0, 0, 0
         #inlayer = Input((input_dev.shape[1],))
         # TODO: regularization
         # TODO: hidden
         # TODO: weight lx
         # TODO: hiddenlx
-        model = create_model(2, hidden[0], hidden[1], 'softmax', num_classes, input_train.shape[1])
+        model = create_model(2, hidden[0], hidden[1], 'softmax', num_classes, train[0].shape[1])
         opt = create_optimizer(method, learning_rate, momentum, decay)
         
         # Early stopping monitors the development of loss and aborts the training if it starts
@@ -118,10 +114,10 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                     optimizer=opt, 
                     metrics=['accuracy'])
         for epoch in range(50):
-            _ = model.fit(input_train, output_train, 
+            _ = model.fit(train[0], train[1], 
                         epochs = epoch +1, 
                         batch_size = 80,
-                        validation_data = (input_dev, output_dev),
+                        validation_data = (dev[0], dev[1]),
                         verbose = 0,
                         callbacks = [es],
                         initial_epoch = epoch)
@@ -136,19 +132,11 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                 print("\t%.2f%%" % (test_scores[1]*100), flush=True)
 
         # Done training, now compute acc, prec etc which only makes sense after training.
-        y_pred = model.predict(input_dev)
-        y_pred = np.argmax(y_pred, axis=1)
-        y_true = np.argmax(output_dev, axis = 1)
-        print("Final\tAcc\tRec\tPrec\tF1")
-        acc = accuracy_score(y_true, y_pred)
-        rec = recall_score(y_true, y_pred, average='weighted')
-        prec = precision_score(y_true, y_pred, average='weighted')
-        f1 = f1_score(y_true, y_pred, average='weighted')
-        print("\t%.4f\t%.4f\t%.4f\t%.4f" % (acc, rec, prec, f1))
-        accs.append(acc)
-        recs.append(rec)
-        precs.append(prec)
-        f1s.append(f1)
+
+        metrics.update_metrics(model, train, "train")
+        metrics.update_metrics(model, dev, "dev")
+        metrics.update_metrics(model, test, "test")
+        
         del model # Reset
 
     # confmx = confusion_matrix(exp.network.predict(test_data[0]), test_data[1])
@@ -162,5 +150,8 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     # file = open("pickles/"+str(direct)+"/neuralnetwork_"+str(name)+".pickle", "wb")
     # pickle.dump(exp.network, file, protocol=pickle.HIGHEST_PROTOCOL)
     # file.close()
-    return np.average(accs),0,0,0,np.average(recs),np.average(precs),np.average(f1s)
-    # return np.average(accs), np.average(valid_accs), np.average(train_accs), report
+    # accs, report, recs, precs, f1s
+    temp = metrics.get_averages_ordered_by(["train", "dev", "test"])
+    accs, recs, precs, f1s = temp
+    return accs, "N/A", recs, precs, f1s
+    

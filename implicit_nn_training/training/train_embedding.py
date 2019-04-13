@@ -92,6 +92,23 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
         (input_train, output_train) = convert_relations(relations_train, label_subst, m)
         (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
         (input_test, output_test) = convert_relations(relations_test, label_subst, m)
+
+    with open("pickles/input_train.pickle", "wb") as f:
+        pickle.dump(input_train, f)
+    with open("pickles/input_dev.pickle", "wb") as f:
+        pickle.dump(input_dev, f)
+    with open("pickles/input_test.pickle", "wb") as f:
+        pickle.dump(input_test, f)
+
+    with open("pickles/output_train.pickle", "wb") as f:
+        pickle.dump(output_train, f)
+    with open("pickles/output_dev.pickle", "wb") as f:
+        pickle.dump(output_dev, f)
+    with open("pickles/output_test.pickle", "wb") as f:
+        pickle.dump(output_test, f)
+    
+    with open("pickles/label_subst.pickle", "wb") as f:
+        pickle.dump(label_subst, f)
     return input_train, output_train, input_dev, output_dev, input_test, output_test ,label_subst
 
 def readDump():
