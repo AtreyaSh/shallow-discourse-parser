@@ -3,7 +3,7 @@
 
 import training.train_embedding as trainW
 from training.train_embedding import convert_relations
-from training.train_NN import train_theanet
+from training.train_NN import train_theanet, train_keras
 import sys
 import csv
 import os
@@ -113,7 +113,7 @@ def grid(trainpath, devpath, testpath, args):
                                     for d in network_depth:
                                         for drop in dropout:
                                             for e in epochs:          
-                                                accs, report, recs, precs, f1s = train_theanet(method=h, learning_rate=j, momentum=k, decay=o[0], regularization=o[1], 
+                                                accs, report, recs, precs, f1s = train_keras(method=h, learning_rate=j, momentum=k, decay=o[0], regularization=o[1], 
                                                                                                     hidden=(l, m), min_improvement=i, validate_every=5,patience=5, depth = d,
                                                                                                     weight_lx=n[0], hidden_lx=n[1], embeddings=embeddings, direct=current_run_name, name=counter,
                                                                                                     drop = drop, epochs = e)
