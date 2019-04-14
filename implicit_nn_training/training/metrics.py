@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from collections import defaultdict
 class Metrics():
+    """Service class that manages metrics for all dataset on one single training instance"""
     def __init__(self):
         self.datasets = [] # List to ensure same order of items TODO implement
         self.metrics = {
@@ -25,7 +26,6 @@ class Metrics():
             # create a new empty list of metrics for the dataset
             self.metrics[metric][name] = []
 
-
     def update_metrics(self, model, dataset, name):
         y_true = np.argmax(dataset[1], axis = 1)
         y_pred = model.predict(dataset[0])
@@ -36,6 +36,8 @@ class Metrics():
         self.metrics["f1s"][name].append(f1_score(y_true, y_pred, average="weighted"))
 
     def get_averages(self):
+        """Iterates over existing dataset metrics, computes their averages and returns them
+        in a flattened dictionary"""
         result = defaultdict(dict)
         for metric in self.metrics.keys():
             for dataset in self.metrics[metric].keys():
