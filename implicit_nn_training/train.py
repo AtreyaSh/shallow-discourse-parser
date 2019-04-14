@@ -81,6 +81,8 @@ def grid(trainpath, devpath, testpath, args):
     act_funcs = ['relu','tanh']
     d_r = [(0.0001, 0.0001)]
     network_depth = [2,3]
+    dropout = [True, False]
+    epochs = [25, 50, 100]
     ## more parameter options, e.g.:
     #method = ['nag', 'sgd', 'rprop','rmsprop', 'adadelta', 'hf', 'sample','layerwise']
     #min_improvements = [0.001, 0.005, 0.1, 0.2]
@@ -108,20 +110,23 @@ def grid(trainpath, devpath, testpath, args):
                         for m in act_funcs:
                             for n in w_h:
                                 for o in d_r:
-                                    for d in network_depth:            
-                                        accs, report, recs, precs, f1s = train_theanet(method=h, learning_rate=j, momentum=k, decay=o[0], regularization=o[1], 
-                                                                                            hidden=(l, m), min_improvement=i, validate_every=5,patience=5, depth = d,
-                                                                                            weight_lx=n[0], hidden_lx=n[1], embeddings=embeddings, direct=current_run_name, name=counter)
-                                        writer.writerow({'Counter': counter, 
-                                                        'Test Acc': round(accs[0]*100,5), 'Valid Acc': round(accs[1]*100,5) , "Train Acc": round(accs[2]*100,5), 
-                                                        'Test Recall': round(recs[0],5), 'Valid Recall': round(recs[1],5) , "Train Recall": round(recs[2],5), 
-                                                        'Test Precision': round(precs[0],5), 'Valid Precision': round(precs[1],5) , "Train Precision": round(precs[2],5), 
-                                                        'Test F1': round(f1s[0]*100,5), 'Valid F1': round(f1s[1],5) , "Train F1": round(f1s[2]*100,5), 
-                                                        "MinImprov": i, "Method": h, "LernR": j, 
-                                                        "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
-                                                        "Hidden": "({0}, {1})".format(l,m), "Report": report})
-                                        counter += 1
-                                        csvfile.flush()
+                                    for d in network_depth:
+                                        for drop in dropout:
+                                            for e in epochs:          
+                                                accs, report, recs, precs, f1s = train_theanet(method=h, learning_rate=j, momentum=k, decay=o[0], regularization=o[1], 
+                                                                                                    hidden=(l, m), min_improvement=i, validate_every=5,patience=5, depth = d,
+                                                                                                    weight_lx=n[0], hidden_lx=n[1], embeddings=embeddings, direct=current_run_name, name=counter,
+                                                                                                    drop = drop, epochs = e)
+                                                writer.writerow({'Counter': counter, 
+                                                                'Test Acc': round(accs[0]*100,5), 'Valid Acc': round(accs[1]*100,5) , "Train Acc": round(accs[2]*100,5), 
+                                                                'Test Recall': round(recs[0],5), 'Valid Recall': round(recs[1],5) , "Train Recall": round(recs[2],5), 
+                                                                'Test Precision': round(precs[0],5), 'Valid Precision': round(precs[1],5) , "Train Precision": round(precs[2],5), 
+                                                                'Test F1': round(f1s[0]*100,5), 'Valid F1': round(f1s[1],5) , "Train F1": round(f1s[2]*100,5), 
+                                                                "MinImprov": i, "Method": h, "LernR": j, 
+                                                                "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
+                                                                "Hidden": "({0}, {1})".format(l,m), "Report": report})
+                                                counter += 1
+                                                csvfile.flush()
     csvfile.close()
 
 def single(trainpath, devpath, testpath, args):
