@@ -8,6 +8,9 @@
 *.cs
 implicit_nn_training/pickles/*
 
+# docs
+docs/paper*
+
 # pdtb files
 conll2016.zip
 
