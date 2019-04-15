@@ -425,8 +425,8 @@ def convert_relations_modified_m_opt(relations, label_subst, m):
             else:
                 context2avg = np.array(list(map(np.average, context2)))
             # 5. add and concatenate final vector
-            final = np.concatenate([np.add(vec1,context1avg),vec1Var,np.add(vec2,context2avg),vec2Var])
-            if len(final) == 4*len(m.wv['a']):
+            final = np.concatenate([np.add(vec1,context1avg,vec1Var),np.add(vec2,context2avg,vec2Var)])
+            if len(final) == 2*len(m.wv['a']):
                 inputs.append(final)
             else:
                 print(("Warning: rel %d has length %d" % (i, len(final))))
