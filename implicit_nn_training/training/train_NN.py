@@ -8,7 +8,7 @@ import pickle
 
 def train_theanet(method, learning_rate, momentum, decay, regularization, hidden,
                   min_improvement, validate_every, patience, weight_lx, hidden_lx,
-                  embeddings, direct, name = 0, depth = 2):
+                  embeddings, direct, name = 0):
     ''' train neural network, calculate confusion matrix, save neural network'''
     input_train, output_train, input_dev, output_dev, input_test, output_test, label_subst = embeddings
     train_data = (input_train, output_train)

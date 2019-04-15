@@ -80,7 +80,6 @@ def grid(trainpath, devpath, testpath, args):
     hidden_alts = [60, 80, 100]
     act_funcs = ['rect:max','lgrelu']
     d_r = [(0.0001, 0.0001)]
-    network_depth = [2,3]
     ## more parameter options, e.g.:
     #method = ['nag', 'sgd', 'rprop','rmsprop', 'adadelta', 'hf', 'sample','layerwise']
     #min_improvements = [0.001, 0.005, 0.1, 0.2]
@@ -108,9 +107,8 @@ def grid(trainpath, devpath, testpath, args):
                         for m in act_funcs:
                             for n in w_h:
                                 for o in d_r:
-                                    for d in network_depth:            
                                         accs, report, recs, precs, f1s = train_theanet(method=h, learning_rate=j, momentum=k, decay=o[0], regularization=o[1], 
-                                                                                            hidden=(l, m), min_improvement=i, validate_every=5,patience=5, depth = d,
+                                                                                            hidden=(l, m), min_improvement=i, validate_every=5, patience=5,
                                                                                             weight_lx=n[0], hidden_lx=n[1], embeddings=embeddings, direct=current_run_name, name=counter)
                                         writer.writerow({'Counter': counter, 
                                                         'Test Acc': round(accs[0]*100,5), 'Valid Acc': round(accs[1]*100,5) , "Train Acc": round(accs[2]*100,5), 
