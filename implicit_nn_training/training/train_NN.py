@@ -104,7 +104,7 @@ def create_model(depth, hidden_nodes, activation_hidden, activation_output, outp
         return model
     elif depth == 3:
         hidden = Dense(hidden_nodes, activation = activation_hidden, kernel_regularizer=w_reg, bias_regularizer = b_reg)(inlayer)
-        hidden2 = Dense(hidden_nodes, activation = activation_hidden)(hidden)
+        hidden2 = Dense(int(round(hidden_nodes*1.25)), activation = activation_hidden)(hidden)
         if drop:
             drop = Dropout(0.5)(hidden2)
             output = Dense(output_shape, activation = activation_output)(drop)

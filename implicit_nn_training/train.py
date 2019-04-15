@@ -72,7 +72,7 @@ def grid(trainpath, devpath, testpath, args):
                                           "%srelations.json" % devpath, "%srelations.json" % testpath,
                                           args.emb, current_run_name, args.name)
     #different parameter options, e.g.:
-    method = ['adam', 'sgd', 'nag']
+    method = ['adam', 'nag', 'sgd']
     min_improvements = [0.001]
     learning_rates = [0.0001]
     w_h = [('l2', 'l1'), ('l1', 'l2'), ('l2','l2'), ("l1", "l1")]
@@ -81,12 +81,8 @@ def grid(trainpath, devpath, testpath, args):
     act_funcs = ['relu','tanh']
     d_r = [(0.0001, 0.0001)]
     network_depth = [2,3]
-<<<<<<< HEAD
-    drop = [True, False]
-=======
     dropout = [True, False]
-    epochs = [25, 50, 100]
->>>>>>> 92090f18354da7b7da54416cd8071b88337502a1
+    epochs = [25, 50] # 100 is bad, usually overfitting
     ## more parameter options, e.g.:
     #method = ['nag', 'sgd', 'rprop','rmsprop', 'adadelta', 'hf', 'sample','layerwise']
     #min_improvements = [0.001, 0.005, 0.1, 0.2]
@@ -114,24 +110,6 @@ def grid(trainpath, devpath, testpath, args):
                         for m in act_funcs:
                             for n in w_h:
                                 for o in d_r:
-<<<<<<< HEAD
-                                    for d in network_depth: 
-                                        for dr in drop:           
-                                            accs, report, recs, precs, f1s = train_theanet(method=h, learning_rate=j, momentum=k, decay=o[0], regularization=o[1], 
-                                                                                                hidden=(l, m), min_improvement=i, validate_every=5,patience=5, depth = d,
-                                                                                                weight_lx=n[0], hidden_lx=n[1], embeddings=embeddings, direct=current_run_name, name=counter,
-                                                                                                drop = dr)
-                                            writer.writerow({'Counter': counter, 
-                                                            'Test Acc': round(accs[0]*100,5), 'Valid Acc': round(accs[1]*100,5) , "Train Acc": round(accs[2]*100,5), 
-                                                            'Test Recall': round(recs[0],5), 'Valid Recall': round(recs[1],5) , "Train Recall": round(recs[2],5), 
-                                                            'Test Precision': round(precs[0],5), 'Valid Precision': round(precs[1],5) , "Train Precision": round(precs[2],5), 
-                                                            'Test F1': round(f1s[0]*100,5), 'Valid F1': round(f1s[1],5) , "Train F1": round(f1s[2]*100,5), 
-                                                            "MinImprov": i, "Method": h, "LernR": j, 
-                                                            "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
-                                                            "Hidden": "({0}, {1})".format(l,m), "Report": report})
-                                            counter += 1
-                                            csvfile.flush()
-=======
                                     for d in network_depth:
                                         for drop in dropout:
                                             for e in epochs:          
@@ -150,7 +128,6 @@ def grid(trainpath, devpath, testpath, args):
                                                                 "Dropout": drop, "Epochs": e)
                                                 counter += 1
                                                 csvfile.flush()
->>>>>>> 92090f18354da7b7da54416cd8071b88337502a1
     csvfile.close()
 
 def single(trainpath, devpath, testpath, args):
