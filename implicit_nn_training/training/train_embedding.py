@@ -94,6 +94,10 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
         (input_train, output_train) = convert_relations_modified_m_5(relations_train, label_subst, m)
         (input_dev, output_dev) = convert_relations_modified_m_5(relations_dev, label_subst, m)
         (input_test, output_test) = convert_relations_modified_m_5(relations_test, label_subst, m)
+    elif name == "m_5_alt":
+        (input_train, output_train) = convert_relations_modified_m_5_alt(relations_train, label_subst, m)
+        (input_dev, output_dev) = convert_relations_modified_m_5_alt(relations_dev, label_subst, m)
+        (input_test, output_test) = convert_relations_modified_m_5_alt(relations_test, label_subst, m)
     elif name == "m_comb1":
         (input_train, output_train) = convert_relations_modified_m_comb1(relations_train, label_subst, m)
         (input_dev, output_dev) = convert_relations_modified_m_comb1(relations_dev, label_subst, m)
@@ -381,6 +385,62 @@ def convert_relations_modified_m_5(relations, label_subst, m):
                 context2avg = np.array(list(map(np.average, context2)))
             # 5. add and concatenate final vector
             final = np.concatenate([np.add(vec1prod,vec1,context1avg), np.add(vec2prod,vec2,context2avg)])
+            if len(final) == 2*len(m.wv['a']):
+                inputs.append(final)
+            else:
+                print(("Warning: rel %d has length %d" % (i, len(final))))
+                if len(vec1) == 0:
+                    print(("arg1", arg1))
+                if len(vec2) == 0:
+                    print(("arg2", arg2))
+                break
+            outputs.append(np.array(label_subst[sense]))
+    ## Theanets training from this point on
+    inputs = np.array(inputs)
+    inputs = inputs.astype(np.float32)
+    outputs = np.array(outputs)
+    outputs = outputs.astype(np.int32)
+    return (inputs, outputs)
+
+def convert_relations_modified_m_5_alt(relations, label_subst, m):
+    inputs = []
+    outputs = []
+    # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
+    for i, rel in enumerate(relations):
+        senses, arg1, arg2, context = rel
+        if i % 1000 == 0:
+            print(("Converting relation",i))
+        for sense in [senses[0]]:
+            # 1. Get weighted token vectors for arg1
+            tokens1 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg1]
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens1 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens1 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec1 = np.array(list(map(np.average, vecs)))
+            vec1Var = np.array(list(map(np.var, vecs)))
+            # 2. Get weighted vectors for tokens in context (before arg1)
+            tokens1 = [(token, 1./(4**depth)) if depth is not None else (token, 0.25) for token, depth in context[0]]
+            context1 = np.transpose([m.wv[t]*w for t,w in tokens1 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens1 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(context1) == 0:
+                context1avg = vec1*0
+            else:
+                context1avg = np.array(list(map(np.average, context1)))
+            # 3. Get weighted token vectors for arg2
+            tokens2 = [(token, 1./(2**depth)) if depth is not None else (token, 0.25) for token, depth in arg2]
+            vecs = np.transpose([m.wv[t]*w for t,w in tokens2 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens2 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(vecs) == 0:
+                vecs = m.wv['a']*0
+            vec2 = np.array(list(map(np.average, vecs)))
+            vec2Var = np.array(list(map(np.var, vecs)))
+            # 4. Get vectors for tokens in context (after arg2)
+            tokens2 = [(token, 1./(4**depth)) if depth is not None else (token, 0.25) for token, depth in context[1]]
+            context2 = np.transpose([m.wv[t]*w for t,w in tokens2 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens2 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
+            if len(context2) == 0:
+                context2avg = vec2*0
+            else:
+                context2avg = np.array(list(map(np.average, context2)))
+            # 5. add and concatenate final vector
+            final = np.concatenate([np.add(vec1Var,vec1,context1avg), np.add(vec2Var,vec2,context2avg)])
             if len(final) == 2*len(m.wv['a']):
                 inputs.append(final)
             else:
