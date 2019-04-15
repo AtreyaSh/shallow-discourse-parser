@@ -86,7 +86,7 @@ def create_weight_regularizer(decay, regularizer = "l2"):
         return l1(decay)
 
 def create_model(depth, hidden_nodes, activation_hidden, activation_output, output_shape,
-                input_shape, drop, w_reg):
+                input_shape, drop, w_reg, b_reg):
     """Creates the model based on inputs. Nothing special just cleanup"""
     inlayer = Input((input_shape,))
     if depth == 1:
@@ -94,7 +94,7 @@ def create_model(depth, hidden_nodes, activation_hidden, activation_output, outp
         model = Model(inputs = inlayer, outputs = output)
         return model
     elif depth == 2:
-        hidden = Dense(hidden_nodes, activation = activation_hidden, kernel_regularizer=w_reg)(inlayer)
+        hidden = Dense(hidden_nodes, activation = activation_hidden, kernel_regularizer=w_reg, bias_regularizer = b_reg)(inlayer)
         if drop:
             drop = Dropout(0.5)(hidden)
             output = Dense(output_shape, activation = activation_output)(drop)
@@ -103,7 +103,7 @@ def create_model(depth, hidden_nodes, activation_hidden, activation_output, outp
         model = Model(inputs = inlayer, outputs = output)
         return model
     elif depth == 3:
-        hidden = Dense(hidden_nodes, activation = activation_hidden, kernel_regularizer=w_reg)(inlayer)
+        hidden = Dense(hidden_nodes, activation = activation_hidden, kernel_regularizer=w_reg, bias_regularizer = b_reg)(inlayer)
         hidden2 = Dense(hidden_nodes, activation = activation_hidden)(hidden)
         if drop:
             drop = Dropout(0.5)(hidden2)
@@ -139,21 +139,14 @@ def train_keras(method, learning_rate, momentum, decay, regularization, hidden,
     metrics = Metrics()
     metrics.register_datasets(["train", "dev", "test"])
     
-    for nexp in range(5):
-        best_acc, best_f1, best_prec, best_rec = 0, 0, 0, 0
-        #inlayer = Input((input_dev.shape[1],))
-        # TODO: regularization
-        # TODO: hidden
-        # TODO: weight lx
-        # TODO: hiddenlx
-
+    for nexp in range(3):
 # def create_model(depth, hidden_nodes, activation_hidden, activation_output, output_shape,
 #                 input_shape, drop = True):
         w_reg = create_weight_regularizer(decay, weight_lx)
-
+        b_reg = create_weight_regularizer(regularization, hidden_lx)
         model = create_model(depth=depth, hidden_nodes=hidden[0], activation_hidden=hidden[1], 
                             activation_output='softmax',output_shape=num_classes, input_shape=train[0].shape[1],
-                            drop=drop, w_reg = w_reg)
+                            drop=drop, w_reg = w_reg, b_reg = b_reg)
         opt = create_optimizer(method, learning_rate, momentum, decay)
         
         # Early stopping monitors the development of loss and aborts the training if it starts
