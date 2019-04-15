@@ -7,15 +7,86 @@ import pickle
 from keras.models import Model
 from keras.layers import Dense, LSTM, Dropout, Input, SpatialDropout1D
 from keras.callbacks import EarlyStopping
-from keras.regularizers import l2 
+from keras.regularizers import l2, l1 # for keras 2
 from keras.utils import np_utils, plot_model
 from keras import optimizers
+import theanets
 from .metrics import Metrics
 import warnings
 warnings.filterwarnings('ignore')
 
+def train_theanet(method, learning_rate, momentum, decay, regularization, hidden,
+                  min_improvement, validate_every, patience, weight_lx, hidden_lx,
+                  embeddings, direct, name = 0, depth = 2, drop = True, epochs = 25):
+    ''' train neural network, calculate confusion matrix, save neural network'''
+    input_train, output_train, input_dev, output_dev, input_test, output_test, label_subst = embeddings
+    train_data = (input_train, output_train)
+    test_data = (input_dev, output_dev)
+    valid_data = (input_dev, output_dev)
+    accs = []
+    train_accs = []
+    valid_accs = []
+    exp = theanets.main.Experiment(theanets.feedforward.Classifier, layers=(len(input_train[0]), hidden, len(label_subst)), loss='XE')
+    if weight_lx == "l1":
+        if hidden_lx == "l1":
+            exp.train(train_data, valid_data, optimize=method,
+                                            learning_rate=learning_rate,
+                                            momentum=momentum,
+                                            weight_l1=decay,
+                                            hidden_l1=regularization,
+                                            min_improvement=min_improvement,
+                                            validate_every=validate_every,
+                                            patience=patience)
+        else:
+            exp.train(train_data, valid_data, optimize=method,
+                                            learning_rate=learning_rate,
+                                            momentum=momentum,
+                                            weight_l1=decay,
+                                            hidden_l2=regularization,
+                                            min_improvement=min_improvement,
+                                            validate_every=validate_every,
+                                            patience=patience)
+    else:
+        if hidden_lx == "l1":   
+            exp.train(train_data, valid_data, optimize=method,
+                                            learning_rate=learning_rate,
+                                            momentum=momentum,
+                                            weight_l2=decay,
+                                            hidden_l1=regularization,
+                                            min_improvement=min_improvement,
+                                            validate_every=validate_every,
+                                            patience=patience)
+        else:
+            exp.train(train_data, valid_data, optimize=method,
+                                            learning_rate=learning_rate,
+                                            momentum=momentum,
+                                            weight_l2=decay,
+                                            hidden_l2=regularization,
+                                            min_improvement=min_improvement,
+                                            validate_every=validate_every,
+                                            patience=patience)
+    confmx = confusion_matrix(test_data[1], exp.network.predict(test_data[0]))
+    acc = float(sum(np.diag(confmx)))/sum(sum(confmx))
+    report = classification_report(test_data[1], exp.network.predict(test_data[0]), digits = 7, labels = np.unique(exp.network.predict(test_data[0])))
+    accs.append(acc)
+    train_acc = accuracy_score(train_data[1], exp.network.predict(train_data[0]))
+    train_accs.append(train_acc)
+    valid_acc = accuracy_score(valid_data[1], exp.network.predict(valid_data[0]))
+    valid_accs.append(valid_acc)
+    file = open("pickles/"+str(direct)+"/neuralnetwork_"+str(name)+".pickle", "wb")
+    pickle.dump(exp.network, file, protocol=pickle.HIGHEST_PROTOCOL)
+    file.close()
+    return (np.average(accs), np.average(valid_accs), np.average(train_accs)), report, (0,0,0), (0,0,0), (0,0,0)
+
+
+def create_weight_regularizer(decay, regularizer = "l2"):
+    if regularizer == "l2":
+        return l2(decay)
+    elif regularizer == "l1":
+        return l1(decay)
+
 def create_model(depth, hidden_nodes, activation_hidden, activation_output, output_shape,
-                input_shape, drop):
+                input_shape, drop, w_reg):
     """Creates the model based on inputs. Nothing special just cleanup"""
     inlayer = Input((input_shape,))
     if depth == 1:
@@ -23,7 +94,7 @@ def create_model(depth, hidden_nodes, activation_hidden, activation_output, outp
         model = Model(inputs = inlayer, outputs = output)
         return model
     elif depth == 2:
-        hidden = Dense(hidden_nodes, activation = activation_hidden)(inlayer)
+        hidden = Dense(hidden_nodes, activation = activation_hidden, kernel_regularizer=w_reg)(inlayer)
         if drop:
             drop = Dropout(0.5)(hidden)
             output = Dense(output_shape, activation = activation_output)(drop)
@@ -32,9 +103,13 @@ def create_model(depth, hidden_nodes, activation_hidden, activation_output, outp
         model = Model(inputs = inlayer, outputs = output)
         return model
     elif depth == 3:
-        hidden = Dense(hidden_nodes, activation = activation_hidden)(inlayer)
+        hidden = Dense(hidden_nodes, activation = activation_hidden, kernel_regularizer=w_reg)(inlayer)
         hidden2 = Dense(hidden_nodes, activation = activation_hidden)(hidden)
-        output = Dense(output_shape, activation = activation_output)(hidden2)
+        if drop:
+            drop = Dropout(0.5)(hidden2)
+            output = Dense(output_shape, activation = activation_output)(drop)
+        else:
+            output = Dense(output_shape, activation = activation_output)(hidden2)
         model = Model(inputs = inlayer, outputs = output)
         return model
 
@@ -50,9 +125,9 @@ def create_optimizer(method, learning_rate, momentum, decay):
     else:
         return optimizers.adam(lr = learning_rate)
 
-def train_theanet(method, learning_rate, momentum, decay, regularization, hidden,
+def train_keras(method, learning_rate, momentum, decay, regularization, hidden,
                   min_improvement, validate_every, patience, weight_lx, hidden_lx,
-                  embeddings, direct, name = 0, depth = 2, drop = True):
+                  embeddings, direct, name = 0, depth = 2, drop = True, epochs = 25):
     ''' train neural network, calculate confusion matrix, save neural network'''
     input_train, output_train, input_dev, output_dev, input_test, output_test, label_subst = embeddings
     # print(output_train.shape)
@@ -63,7 +138,7 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     test = (input_test, np_utils.to_categorical(output_test, num_classes=num_classes))
     metrics = Metrics()
     metrics.register_datasets(["train", "dev", "test"])
-
+    
     for nexp in range(5):
         best_acc, best_f1, best_prec, best_rec = 0, 0, 0, 0
         #inlayer = Input((input_dev.shape[1],))
@@ -71,13 +146,14 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
         # TODO: hidden
         # TODO: weight lx
         # TODO: hiddenlx
-        model = create_model(depth = depth, 
-                            hidden_nodes = hidden[0], 
-                            activation_hidden = hidden[1], 
-                            activation_output = 'softmax', 
-                            output_shape = num_classes, 
-                            input_shape = train[0].shape[1], 
-                            drop = drop)
+
+# def create_model(depth, hidden_nodes, activation_hidden, activation_output, output_shape,
+#                 input_shape, drop = True):
+        w_reg = create_weight_regularizer(decay, weight_lx)
+
+        model = create_model(depth=depth, hidden_nodes=hidden[0], activation_hidden=hidden[1], 
+                            activation_output='softmax',output_shape=num_classes, input_shape=train[0].shape[1],
+                            drop=drop, w_reg = w_reg)
         opt = create_optimizer(method, learning_rate, momentum, decay)
         
         # Early stopping monitors the development of loss and aborts the training if it starts
@@ -91,7 +167,7 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
         model.compile(loss='categorical_crossentropy', 
                     optimizer=opt, 
                     metrics=['accuracy'])
-        for epoch in range(50):
+        for epoch in range(epochs):
             _ = model.fit(train[0], train[1], 
                         epochs = epoch +1, 
                         batch_size = 80,
