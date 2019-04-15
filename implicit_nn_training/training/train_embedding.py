@@ -20,7 +20,7 @@ from nltk.corpus import stopwords
 
 # m_0 -> baseline, m_1 -> negative sampling, m_2 -> new aggregation function
 # m_3 -> excluding stop words, m_4 larger concat window, m_5 -> contexts with exponential decay,
-# m_opt -> combinations
+# m_comb_* -> combinations
 
 def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepath, relations_train_filepath,
                   relations_dev_filepath, relations_test_filepath, googlevecs_filepath, direct, name):
@@ -29,6 +29,10 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
     # Initalize semantic model (with None data)
     if name == "m_1":
         m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=10, sg=1)
+    elif name == "m_1_push":
+        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=20, sg=1)
+    elif name == "m_1_alt":
+        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=10, sg=1, hs = 1)
     elif name == "m_comb3":
         m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=10)
     elif name == "m_comb4":
@@ -393,7 +397,6 @@ def convert_relations_modified_m_5(relations, label_subst, m):
     outputs = np.array(outputs)
     outputs = outputs.astype(np.int32)
     return (inputs, outputs)
-
 
 def convert_relations_modified_m_comb1(relations, label_subst, m):
     inputs = []
