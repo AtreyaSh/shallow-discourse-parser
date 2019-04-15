@@ -402,7 +402,7 @@ def convert_relations_modified_m_opt(relations, label_subst, m):
             if len(vecs) == 0:
                 vecs = m.wv['a']*0
             vec1 = np.array(list(map(np.average, vecs)))
-            vec1Var = np.array(list(map(np.var, vecs)))
+            vec1prod = np.array(list(map(np.prod, vecs)))
             # 2. Get weighted vectors for tokens in context (before arg1)
             tokens1 = [(token, 1./(4**depth)) if depth is not None else (token, 0.25) for token, depth in context[0]]
             context1 = np.transpose([m.wv[t]*w for t,w in tokens1 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens1 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
@@ -416,7 +416,7 @@ def convert_relations_modified_m_opt(relations, label_subst, m):
             if len(vecs) == 0:
                 vecs = m.wv['a']*0
             vec2 = np.array(list(map(np.average, vecs)))
-            vec2Var = np.array(list(map(np.var, vecs)))
+            vec2prod = np.array(list(map(np.prod, vecs)))
             # 4. Get vectors for tokens in context (after arg2)
             tokens2 = [(token, 1./(4**depth)) if depth is not None else (token, 0.25) for token, depth in context[1]]
             context2 = np.transpose([m.wv[t]*w for t,w in tokens2 if m.wv.__contains__(t)] + [m.wv[t.lower()]*w for t,w in tokens2 if not m.wv.__contains__(t) and m.wv.__contains__(t.lower())])
@@ -425,7 +425,7 @@ def convert_relations_modified_m_opt(relations, label_subst, m):
             else:
                 context2avg = np.array(list(map(np.average, context2)))
             # 5. add and concatenate final vector
-            final = np.concatenate([np.add(vec1,context1avg,vec1Var),np.add(vec2,context2avg,vec2Var)])
+            final = np.concatenate([np.add(vec1,context1avg,vec1prod),np.add(vec2,context2avg,vec2prod)])
             if len(final) == 2*len(m.wv['a']):
                 inputs.append(final)
             else:
