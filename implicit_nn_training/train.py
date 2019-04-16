@@ -124,8 +124,8 @@ def grid(trainpath, devpath, testpath, args):
                                                                 'Test F1': round(f1s[0]*100,5), 'Valid F1': round(f1s[1],5) , "Train F1": round(f1s[2]*100,5), 
                                                                 "MinImprov": i, "Method": h, "LernR": j, 
                                                                 "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
-                                                                "Hidden": "({0}, {1})".format(l,m), "Report": report},
-                                                                "Dropout": drop, "Epochs": e)
+                                                                "Hidden": "({0}, {1})".format(l,m), "Report": report,
+                                                                "Dropout": drop, "Epochs": e})
                                                 counter += 1
                                                 csvfile.flush()
     csvfile.close()
