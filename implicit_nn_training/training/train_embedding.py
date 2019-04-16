@@ -33,6 +33,8 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
         m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=20, sg=1)
     elif name == "m_1_alt":
         m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=10, sg=1, hs = 1)
+    elif name == "m_1_alt_push":
+        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=20, sg=1, hs = 1)
     elif name == "m_comb3":
         m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=10)
     elif name == "m_comb4":
@@ -649,10 +651,6 @@ def get_token_depths(arg, doc):
         except KeyError:
             tokens.append((token, None))
     return tokens
-
-####################################
-# context of arguments
-####################################
 
 def get_context(rel, doc, context_size=1):
     """ Get tokens from context sentences of arguments """
