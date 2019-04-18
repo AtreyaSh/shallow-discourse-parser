@@ -2,7 +2,7 @@
 
 This project is a fork of the official Frankfurt Shallow Discourse Parser and involves building/experimenting on implicit sense labelling components. Development is underway.
 
-To set up the pre-commit hook that will keep python dependencies up-to-date, please run the following:
+To set up the pre-commit hook that will keep python dependencies up-to-date and automatically download pre-trained google word vectors, please run the following:
 
 ```shell
 $ ./init.sh
