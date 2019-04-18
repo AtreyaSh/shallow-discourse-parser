@@ -92,7 +92,7 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                                             hidden_l1=regularization,
                                             min_improvement=min_improvement,
                                             validate_every=validate_every,
-                                            patience=1)
+                                            patience=patience)
         else:
             exp.train(train_data, valid_data, optimize=method,
                                             learning_rate=learning_rate,
@@ -101,7 +101,7 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                                             hidden_l2=regularization,
                                             min_improvement=min_improvement,
                                             validate_every=validate_every,
-                                            patience=1)
+                                            patience=patience)
     else:
         if hidden_lx == "l1":
             exp.train(train_data, valid_data, optimize=method,
@@ -111,7 +111,7 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                                             hidden_l1=regularization,
                                             min_improvement=min_improvement,
                                             validate_every=validate_every,
-                                            patience=1)
+                                            patience=patience)
         else:
             exp.train(train_data, valid_data, optimize=method,
                                             learning_rate=learning_rate,
@@ -120,7 +120,7 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                                             hidden_l2=regularization,
                                             min_improvement=min_improvement,
                                             validate_every=validate_every,
-                                            patience=1)
+                                            patience=patience)
     
     metrics.update_metrics(train_data[1], exp.network.predict(train_data[0]), "train")
     metrics.update_metrics(valid_data[1], exp.network.predict(valid_data[0]), "dev")
