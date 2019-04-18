@@ -236,7 +236,7 @@ def recalc():
             writer.writerow({'Counter': counter, 'ReportTrain': reportTrain, 'ReportDev': reportDev})
             csvfile.flush()
         csvfile.close()
-        return 0
+    return 0
             
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
