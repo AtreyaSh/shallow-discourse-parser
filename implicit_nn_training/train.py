@@ -72,16 +72,16 @@ def grid(trainpath, devpath, testpath, args):
                                           "%srelations.json" % devpath, "%srelations.json" % testpath,
                                           args.emb, current_run_name, args.name)
     #different parameter options, e.g.:
-    method = ['adam', 'nag', 'sgd']
+    method = ['adam']
     min_improvements = [0.001]
     learning_rates = [0.0001]
     w_h = [('l2', 'l1'), ('l1', 'l2'), ('l2','l2'), ("l1", "l1")]
-    momentum_alts = [0.4, 0.6, 0.95]
-    hidden_alts = [60, 80, 100]
-    act_funcs = ['relu','tanh']
+    momentum_alts = [0.4, 0.6]
+    hidden_alts = [60, 100, 500, 1000]
+    act_funcs = ['prelu']
     d_r = [(0.0001, 0.0001)]
     network_depth = [2,3]
-    dropout = [True, False]
+    dropout = [False]
     epochs = [25, 50] # 100 is bad, usually overfitting
     ## more parameter options, e.g.:
     #method = ['nag', 'sgd', 'rprop','rmsprop', 'adadelta', 'hf', 'sample','layerwise']
@@ -176,7 +176,7 @@ def single(trainpath, devpath, testpath, args):
     current_run_name = "%s_%s" % (current_time, args.name)
     os.makedirs("pickles/"+current_run_name)
     csvfile = open('pickles/'+ current_run_name + '/' + 'Results.csv', 'w')
-    fieldnames = ['Counter','Test Acc', 'Valid Acc', 'Train Acc', "Test Recall","Valid Recall", "Train Recall","Test Precision", "Valid Precision","Train Precision" , "Test F1", "Valid F1","Train F1", "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report", "Dropout", "Epochs"]
+    fieldnames = ['Name','Test Acc', 'Valid Acc', 'Train Acc', "Test Recall","Valid Recall", "Train Recall","Test Precision", "Valid Precision","Train Precision" , "Test F1", "Valid F1","Train F1", "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report", "Dropout", "Epochs"]
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.flush()
@@ -192,7 +192,7 @@ def single(trainpath, devpath, testpath, args):
     method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'adam', 0.0001, 0.6, 0.0001, 0.0001, (1000, 'prelu'), 0.001, 5, 5, "l2", "l2"
     dropout, epochs = False, 50
     accs, report, recs, precs, f1s = train_keras(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name, 0, 2, False, 100)
-    writer.writerow({ 
+    writer.writerow({ "Name" : args.name,
                                                                 'Test Acc': round(accs[0]*100,5), 'Valid Acc': round(accs[1]*100,5) , "Train Acc": round(accs[2]*100,5), 
                                                                 'Test Recall': round(recs[0],5), 'Valid Recall': round(recs[1],5) , "Train Recall": round(recs[2],5), 
                                                                 'Test Precision': round(precs[0],5), 'Valid Precision': round(precs[1],5) , "Train Precision": round(precs[2],5), 
