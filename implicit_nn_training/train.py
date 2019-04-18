@@ -166,12 +166,6 @@ def restart():
 def getCurrentTime():
     return datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
-# 0. load all parses/relations information into memory
-# 1. loop through all directories and find embedding model, load it into memory
-# 2. assign relevant convert_relation function, create input and output pickles and save to file
-# 3. exp.predict on the input/outputs for train/dev and create classification reports
-# 4. save classification reports as another results file, or possibly edit old file in place
-
 def recalc():
     # load necessary files
     f = open("pickles/relations_dev.pickle", "rb")
@@ -201,27 +195,43 @@ def recalc():
         f = open(embed[0], "rb")
         m = pickle.load(f)
         f.close()
-        # convert relations
-        mName = re.sub(".pickle", "", os.path.basename(embed[0]))
-        function = [item for item in dir(trainW) if mName in item]
-        if len(function) == 0:
-            function = "convert_relations"
+        if os.path.exists(direct+"/inout_train.pickle") and os.path.exists(direct+"/inout_dev.pickle") and os.path.exists(direct+"/inout_test.pickle"):
+            f = open(direct+"/inout_train.pickle", "rb")
+            input_train, output_train = pickle.load(f)
+            f.close()
+            f = open(direct+"/inout_dev.pickle", "rb")
+            input_dev, output_dev = pickle.load(f)
+            f.close()
+            f = open(direct+"/inout_test.pickle", "rb")
+            input_test, output_test = pickle.load(f)
+            f.close()
         else:
-            function = function[0]
-        convert_relations = getattr(trainW, function)
-        (input_train, output_train) = convert_relations(relations_train, label_subst, m)
-        (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
-        (input_test, output_test) = convert_relations(relations_test, label_subst, m)
-        # TODO: write out inputs and outputs
-        file_ls = open(direct+"/inout_train.pickle", "wb")
-        pickle.dump((input_train, output_train), file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-        file_ls = open(direct+"/inout_dev.pickle", "wb")
-        pickle.dump((input_dev, output_dev), file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-        file_ls = open(direct+"/inout_test.pickle", "wb")
-        pickle.dump((input_test, output_test), file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
+            # convert relations
+            mName = re.sub(".pickle", "", os.path.basename(embed[0]))
+            function = [item for item in dir(trainW) if mName in item]
+            if len(function) == 0:
+                if mName == "m_comb3" or mName == "m_comb4":
+                    function = "convert_relations_modified_m_comb2"
+                else:
+                    function = "convert_relations"
+            else:
+                function = function[0]
+            convert_relations = getattr(trainW, function)
+            (input_train, output_train) = convert_relations(relations_train, label_subst, m)
+            (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
+            (input_test, output_test) = convert_relations(relations_test, label_subst, m)
+            if not os.path.exists(direct+"/inout_train.pickle"):
+                file_ls = open(direct+"/inout_train.pickle", "wb")
+                pickle.dump((input_train, output_train), file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+                file_ls.close()
+            if not os.path.exists(direct+"/inout_dev.pickle"):
+                file_ls = open(direct+"/inout_dev.pickle", "wb")
+                pickle.dump((input_dev, output_dev), file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+                file_ls.close()
+            if not os.path.exists(direct+"/inout_test.pickle"):
+                file_ls = open(direct+"/inout_test.pickle", "wb")
+                pickle.dump((input_test, output_test), file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+                file_ls.close()
         # carry on to NNs
         NN = glob.glob(direct+"/n*")
         for nn in NN:
@@ -250,7 +260,7 @@ if __name__ == "__main__":
                         help="Path to pretrained embeddings")
     parser.add_argument("--mode", type=str, default="single",
                         help="what to test")
-    parser.add_argument("--name", type=str, default="m_0")
+    parser.add_argument("--name", type=str)
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
     if args.debug:
