@@ -128,7 +128,7 @@ def single(trainpath, devpath, testpath, args):
     current_run_name = "%s_%s" % (current_time, args.name)
     os.makedirs("pickles/"+current_run_name)
     csvfile = open('pickles/'+ current_run_name + '/' + 'Results.csv', 'w')
-    fieldnames = ['Test Acc', 'Valid Acc', 'Train Acc', "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
+    fieldnames = ['Test Acc', 'Valid Acc', 'Train Acc', "Test Recall","Valid Recall", "Train Recall","Test Precision", "Valid Precision","Train Precision" , "Test F1", "Valid F1","Train F1", "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.flush()
@@ -142,9 +142,11 @@ def single(trainpath, devpath, testpath, args):
                                           args.emb, current_run_name, args.name)
     # train neural network
     method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'nag', 0.0001, 0.6, 0.0001, 0.0001, (60, 'lgrelu'), 0.001, 5, 5, "l1", "l2"
-    accs, report, _, _, _ = train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name)
-    writer.writerow({'Test Acc': round(accs[0]*100,5), 'Valid Acc': round(accs[1]*100,5), 
-                                                     "Train Acc": round(accs[2]*100,5),
+    accs, report, recs, precs, f1s = train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name)
+    writer.writerow({'Test Acc': round(accs[0]*100,5), 'Valid Acc': round(accs[1]*100,5) , "Train Acc": round(accs[2]*100,5), 
+                                                        'Test Recall': round(recs[0],5), 'Valid Recall': round(recs[1],5) , "Train Recall": round(recs[2],5), 
+                                                        'Test Precision': round(precs[0],5), 'Valid Precision': round(precs[1],5) , "Train Precision": round(precs[2],5), 
+                                                        'Test F1': round(f1s[0]*100,5), 'Valid F1': round(f1s[1],5) , "Train F1": round(f1s[2]*100,5), 
                                                      "MinImprov": min_improvement, "Method": method, "LernR": learning_rate,
                                                      "Momentum":momentum, "Decay":"{0}={1}".format(weight_lx, decay), "Regular.": "{0}={1}".format(hidden_lx, regularization),
                                                      "Hidden": "({0}, {1})".format(hidden[0],hidden[1]), 'Report': report})
