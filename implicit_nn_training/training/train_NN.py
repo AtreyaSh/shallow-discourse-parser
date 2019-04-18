@@ -58,7 +58,7 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                                             patience=patience)
     confmx = confusion_matrix(test_data[1], exp.network.predict(test_data[0]))
     acc = float(sum(np.diag(confmx)))/sum(sum(confmx))
-    report = classification_report(test_data[1], exp.network.predict(test_data[0]), digits = 7, labels = np.unique(exp.network.predict(test_data[0])))
+    report = classification_report(test_data[1], exp.network.predict(test_data[0]), digits = 7)
     accs.append(acc)
     train_acc = accuracy_score(train_data[1], exp.network.predict(train_data[0]))
     train_accs.append(train_acc)
