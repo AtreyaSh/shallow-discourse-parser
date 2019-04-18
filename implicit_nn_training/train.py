@@ -156,7 +156,7 @@ def final(trainpath, devpath, testpath, args):
             method, hidden_nodes, epochs, min_improv = "adam", 100, 100, 0.001
             accs, report, recs, precs, f1s = train_keras(method = "adam", learning_rate = lr, 
                     momentum = setting[0], decay = decay, regularization=reg, validate_every=5,
-                    hidden=(hidden_nodes, setting[3]), min_improvement = min_improv, name = mode, direct = current_run_name,
+                    hidden=(settings[4], setting[3]), min_improvement = min_improv, name = mode, direct = current_run_name,
                     patience=5, depth=2, weight_lx=setting[1], hidden_lx=setting[2], embeddings=embeddings,
                     drop = False, epochs=epochs)
             writer.writerow({"Mode": mode, 
@@ -166,7 +166,7 @@ def final(trainpath, devpath, testpath, args):
                 'Test F1': round(f1s[0]*100,5), 'Valid F1': round(f1s[1],5) , "Train F1": round(f1s[2]*100,5), 
                 "MinImprov": min_improv, "Method": method, "LernR": lr, 
                 "Momentum":setting[0], "Decay":"{0}={1}".format(setting[1], decay), "Regular.": "{0}={1}".format(setting[2], reg),
-                "Hidden": "({0}, {1})".format(hidden_nodes,setting[3]), "Report": report,
+                "Hidden": "({0}, {1})".format(settings[4],setting[3]), "Report": report,
                 "Dropout": False, "Epochs": epochs})
     csvfile.close()   
 
