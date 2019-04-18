@@ -72,10 +72,11 @@ def grid(trainpath, devpath, testpath, args):
                                           "%srelations.json" % devpath, "%srelations.json" % testpath,
                                           args.emb, current_run_name, args.name)
     #different parameter options, e.g.:
+    total = 96
     method = ['adam']
     min_improvements = [0.001]
     learning_rates = [0.0001]
-    w_h = [('l2', 'l1'), ('l1', 'l2'), ('l2','l2'), ("l1", "l1")]
+    w_h = [('l2', 'l1'), ('l1', 'l2'), ('l2','l2')]
     momentum_alts = [0.4, 0.6]
     hidden_alts = [60, 100, 500, 1000]
     act_funcs = ['prelu']
@@ -127,6 +128,7 @@ def grid(trainpath, devpath, testpath, args):
                                                                 "Hidden": "({0}, {1})".format(l,m), "Report": report,
                                                                 "Dropout": drop, "Epochs": e})
                                                 counter += 1
+                                                print("%s/%s" % (counter, total))
                                                 csvfile.flush()
     csvfile.close()
 
