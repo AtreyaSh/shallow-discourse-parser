@@ -6,10 +6,13 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 import pickle
 from keras.models import Model
 from keras.layers import Dense, LSTM, Dropout, Input, SpatialDropout1D
+from keras.layers.advanced_activations import PReLU
+from keras.layers import Activation
 from keras.callbacks import EarlyStopping
 from keras.regularizers import l2, l1 # for keras 2
 from keras.utils import np_utils, plot_model
 from keras import optimizers
+from tqdm import tqdm
 import theanets
 from .metrics import Metrics
 import warnings
@@ -78,6 +81,17 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     file.close()
     return (np.average(accs), np.average(valid_accs), np.average(train_accs)), report, (0,0,0), (0,0,0), (0,0,0)
 
+def create_activation(activation):
+    if activation == "prelu":
+        return PReLU()
+    elif activation == "relu":
+        return Activation("relu")
+    elif activation == "tanh":
+        return Activation("tanh")
+    elif activation == "softmax":
+        return Activation("softmax")
+    else:
+        return Activation("tanh")
 
 def create_weight_regularizer(decay, regularizer = "l2"):
     if regularizer == "l2":
@@ -94,22 +108,25 @@ def create_model(depth, hidden_nodes, activation_hidden, activation_output, outp
         model = Model(inputs = inlayer, outputs = output)
         return model
     elif depth == 2:
-        hidden = Dense(hidden_nodes, activation = activation_hidden, kernel_regularizer=w_reg, bias_regularizer = b_reg)(inlayer)
+        hidden = Dense(hidden_nodes, kernel_regularizer=w_reg, bias_regularizer = b_reg)(inlayer)
+        act = create_activation(activation_hidden)(hidden)
         if drop:
-            drop = Dropout(0.5)(hidden)
+            drop = Dropout(0.5)(act)
             output = Dense(output_shape, activation = activation_output)(drop)
         else:
-            output = Dense(output_shape, activation = activation_output)(hidden)
+            output = Dense(output_shape, activation = activation_output)(act)
         model = Model(inputs = inlayer, outputs = output)
         return model
     elif depth == 3:
-        hidden = Dense(hidden_nodes, activation = activation_hidden, kernel_regularizer=w_reg, bias_regularizer = b_reg)(inlayer)
-        hidden2 = Dense(int(round(hidden_nodes*1.25)), activation = activation_hidden)(hidden)
+        hidden = Dense(hidden_nodes, kernel_regularizer=w_reg, bias_regularizer = b_reg)(inlayer)
+        act1 = create_activation(activation_hidden)(hidden)
+        hidden2 = Dense(int(round(hidden_nodes*1.25)))(act1)
+        act2 = create_activation(activation_hidden)(hidden2)
         if drop:
-            drop = Dropout(0.5)(hidden2)
+            drop = Dropout(0.5)(act2)
             output = Dense(output_shape, activation = activation_output)(drop)
         else:
-            output = Dense(output_shape, activation = activation_output)(hidden2)
+            output = Dense(output_shape, activation = activation_output)(act2)
         model = Model(inputs = inlayer, outputs = output)
         return model
 
@@ -139,7 +156,7 @@ def train_keras(method, learning_rate, momentum, decay, regularization, hidden,
     metrics = Metrics()
     metrics.register_datasets(["train", "dev", "test"])
     
-    for nexp in range(3):
+    for nexp in range(10):
 # def create_model(depth, hidden_nodes, activation_hidden, activation_output, output_shape,
 #                 input_shape, drop = True):
         w_reg = create_weight_regularizer(decay, weight_lx)
@@ -151,32 +168,28 @@ def train_keras(method, learning_rate, momentum, decay, regularization, hidden,
         
         # Early stopping monitors the development of loss and aborts the training if it starts
         # to increase again (prevents overfitting)
-        es = EarlyStopping(monitor='acc',
-                        patience=patience,
-                        mode='min',
-                        min_delta = min_improvement,
-                        verbose=0)
+        # es = EarlyStopping(monitor='acc',
+        #                 patience=patience,
+        #                 mode='min',
+        #                 min_delta = min_improvement,
+        #                 verbose=0)
 
         model.compile(loss='categorical_crossentropy', 
                     optimizer=opt, 
                     metrics=['accuracy'])
-        for epoch in range(epochs):
-            _ = model.fit(train[0], train[1], 
-                        epochs = epoch +1, 
-                        batch_size = 80,
+        _ = model.fit(train[0], train[1], 
+                        epochs = epochs, 
+                        batch_size = 500,
                         validation_data = (dev[0], dev[1]),
-                        verbose = 0,
-                        callbacks = [es],
-                        initial_epoch = epoch)
-            if epoch % validate_every == 0: # TODO: this is wrong right?
-                print("\ttrain\tdev\ttest")
-                # scores are loss, acc, f1, recall, precision
-                train_scores = model.evaluate(train[0], train[1], verbose = 0, batch_size=80)
-                print("acc.\t%.2f%%" % (train_scores[1]*100), end="", flush=True)
-                dev_scores = model.evaluate(dev[0], dev[1], batch_size = 80, verbose = 0)
-                print("\t%.2f%%" % (dev_scores[1]*100), end="", flush=True)
-                test_scores = model.evaluate(test[0], test[1], verbose=0, batch_size= 80)
-                print("\t%.2f%%" % (test_scores[1]*100), flush=True)
+                        verbose = 1)
+        # for epoch in tqdm(range(epochs)):
+        #     _ = model.fit(train[0], train[1], 
+        #                 epochs = epoch +1, 
+        #                 batch_size = 80,
+        #                 validation_data = (dev[0], dev[1]),
+        #                 verbose = 0,
+        #                 callbacks = [es],
+        #                 initial_epoch = epoch)
 
         # Done training, now compute acc, prec etc which only makes sense after training.
 

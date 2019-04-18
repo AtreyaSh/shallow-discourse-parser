@@ -130,13 +130,53 @@ def grid(trainpath, devpath, testpath, args):
                                                 csvfile.flush()
     csvfile.close()
 
+def final(trainpath, devpath, testpath, args):
+    current_time = getCurrentTime()
+    current_run_name = "%s_%s" % (current_time, args.name)
+    os.makedirs("pickles/"+current_run_name)
+    csvfile = open('pickles/'+ current_run_name + '/' + 'Results.csv', 'w')
+    fieldnames = ["Mode",'Test Acc', 'Valid Acc', 'Train Acc', "Test Recall","Valid Recall", "Train Recall","Test Precision", "Valid Precision","Train Precision" , "Test F1", "Valid F1","Train F1", "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report", "Dropout", "Epochs"]
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer.writeheader()
+    csvfile.flush()
+    for mode in ["m_1_alt_push", "m_1", "m_5"]:
+        embeddings = trainW.start_vectors("%sparses.json" % trainpath, "%sparses.json" % devpath,
+                                          "%sparses.json" % testpath, "%srelations.json" % trainpath,
+                                          "%srelations.json" % devpath, "%srelations.json" % testpath,
+                                          args.emb, current_run_name, args.name)
+        # method, min_improv, lr, momentum, decay, regular, hlayers, hact, dropout, epochs
+        for setting in [(0.4, "l2", "l2", "prelu",50), (0.6, "l2", "l1", "prelu",50), (0.4, "l2", "l1", "prelu",50), (0.4, "l2", "l2", "tanh",50), (0.6, "l2", "l1", "relu",50), (0.4, "l2", "l1", "relu",50),
+        (0.4, "l2", "l2", "prelu",100), (0.6, "l2", "l1", "prelu",100), (0.4, "l2", "l1", "prelu",100), (0.4, "l2", "l2", "tanh",100), (0.6, "l2", "l1", "relu",100), (0.4, "l2", "l1", "relu",100),
+        (0.4, "l2", "l2", "prelu",500), (0.6, "l2", "l1", "prelu",500), (0.4, "l2", "l1", "prelu",500), (0.4, "l2", "l2", "tanh",500), (0.6, "l2", "l1", "relu",500), (0.4, "l2", "l1", "relu",500)]:
+            # (method=h, learning_rate=j, momentum=k, decay=o[0], regularization=o[1], 
+            # hidden=(l, m), min_improvement=i, validate_every=5,patience=5, depth = d,
+            # weight_lx=n[0], hidden_lx=n[1], embeddings=embeddings, direct=current_run_name, name=counter,
+            # drop = drop, epochs = e)
+            lr = reg = decay = 0.0001
+            method, hidden_nodes, epochs, min_improv = "adam", 100, 100, 0.001
+            accs, report, recs, precs, f1s = train_keras(method = "adam", learning_rate = lr, 
+                    momentum = setting[0], decay = decay, regularization=reg, validate_every=5,
+                    hidden=(hidden_nodes, setting[3]), min_improvement = min_improv, name = mode, direct = current_run_name,
+                    patience=5, depth=2, weight_lx=setting[1], hidden_lx=setting[2], embeddings=embeddings,
+                    drop = False, epochs=epochs)
+            writer.writerow({"Mode": mode, 
+                'Test Acc': round(accs[0]*100,5), 'Valid Acc': round(accs[1]*100,5) , "Train Acc": round(accs[2]*100,5), 
+                'Test Recall': round(recs[0],5), 'Valid Recall': round(recs[1],5) , "Train Recall": round(recs[2],5), 
+                'Test Precision': round(precs[0],5), 'Valid Precision': round(precs[1],5) , "Train Precision": round(precs[2],5), 
+                'Test F1': round(f1s[0]*100,5), 'Valid F1': round(f1s[1],5) , "Train F1": round(f1s[2]*100,5), 
+                "MinImprov": min_improv, "Method": method, "LernR": lr, 
+                "Momentum":setting[0], "Decay":"{0}={1}".format(setting[1], decay), "Regular.": "{0}={1}".format(setting[2], reg),
+                "Hidden": "({0}, {1})".format(hidden_nodes,setting[3]), "Report": report,
+                "Dropout": False, "Epochs": epochs})
+    csvfile.close()   
+
 def single(trainpath, devpath, testpath, args):
     ''' train the neural network with a given parameter setting'''
     current_time = getCurrentTime()
     current_run_name = "%s_%s" % (current_time, args.name)
     os.makedirs("pickles/"+current_run_name)
     csvfile = open('pickles/'+ current_run_name + '/' + 'Results.csv', 'w')
-    fieldnames = ['Test Acc', 'Valid Acc', 'Train Acc', "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report"]
+    fieldnames = ['Counter','Test Acc', 'Valid Acc', 'Train Acc', "Test Recall","Valid Recall", "Train Recall","Test Precision", "Valid Precision","Train Precision" , "Test F1", "Valid F1","Train F1", "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", "Report", "Dropout", "Epochs"]
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.flush()
@@ -149,13 +189,18 @@ def single(trainpath, devpath, testpath, args):
                                           "%srelations.json" % devpath, "%srelations.json" % testpath,
                                           args.emb, current_run_name, args.name)
     # train neural network
-    method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'nag', 0.0001, 0.6, 0.0001, 0.0001, (60, 'lgrelu'), 0.001, 5, 5, "l1", "l2"
-    accs, report, _, _, _ = train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name)
-    writer.writerow({'Test Acc': round(accs[0]*100,5), 'Valid Acc': round(accs[1]*100,5), 
-                                                     "Train Acc": round(accs[2]*100,5),
-                                                     "MinImprov": min_improvement, "Method": method, "LernR": learning_rate,
-                                                     "Momentum":momentum, "Decay":"{0}={1}".format(weight_lx, decay), "Regular.": "{0}={1}".format(hidden_lx, regularization),
-                                                     "Hidden": "({0}, {1})".format(hidden[0],hidden[1]), 'Report': report})
+    method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'adam', 0.0001, 0.6, 0.0001, 0.0001, (1000, 'prelu'), 0.001, 5, 5, "l2", "l2"
+    dropout, epochs = False, 50
+    accs, report, recs, precs, f1s = train_keras(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name, 0, 2, False, 100)
+    writer.writerow({ 
+                                                                'Test Acc': round(accs[0]*100,5), 'Valid Acc': round(accs[1]*100,5) , "Train Acc": round(accs[2]*100,5), 
+                                                                'Test Recall': round(recs[0],5), 'Valid Recall': round(recs[1],5) , "Train Recall": round(recs[2],5), 
+                                                                'Test Precision': round(precs[0],5), 'Valid Precision': round(precs[1],5) , "Train Precision": round(precs[2],5), 
+                                                                'Test F1': round(f1s[0]*100,5), 'Valid F1': round(f1s[1],5) , "Train F1": round(f1s[2]*100,5), 
+                                                                "MinImprov": min_improvement, "Method": method, "LernR": learning_rate, 
+                                                                "Momentum":momentum, "Decay":"{0}={1}".format(weight_lx, decay), "Regular.": "{0}={1}".format(hidden_lx, regularization),
+                                                                "Hidden": "({0}, {1})".format(hidden[0],hidden[1]), "Report": report,
+                                                                "Dropout": dropout, "Epochs": epochs})
     csvfile.flush()
     csvfile.close()
 
@@ -202,6 +247,10 @@ if __name__ == "__main__":
                         help="what to test")
     parser.add_argument("--name", type=str)
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--blind", type=str,
+                        help="Path to blind set data folder")
+    ## interface with the training in case mode is single
+
     args = parser.parse_args()
     if args.debug:
         print("WARNING DEBUG MODE")
@@ -215,6 +264,8 @@ if __name__ == "__main__":
         grid(args.train, args.dev, args.test, args)
     elif args.mode == "combination":
         combination(args.train, args.dev, args.test, args)
+    elif args.mode == "final":
+        final(args.train, args.dev, args.test, args)
     else:
         print("Unknown args")
         sys.exit()
