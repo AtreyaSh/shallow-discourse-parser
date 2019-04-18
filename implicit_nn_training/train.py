@@ -3,7 +3,6 @@
 
 from training.train_NN import train_theanet
 from sklearn.metrics import classification_report
-from training.metrics import Metrics
 import training.train_embedding as trainW
 import numpy as np
 import sys
@@ -186,7 +185,13 @@ def recalc():
     f.close()
     files = glob.glob("./pickles/2019*")
     for direct in files:
+        print("processing %s" % direct)
         # identify labels and embedding
+        csvfile = open(direct+'/Results2.csv', 'w')
+        fieldnames = ["Counter", "ReportTrain", "ReportDev"]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        csvfile.flush()
         label = glob.glob(direct+"/label*")
         embed = glob.glob(direct+"/m*")
         # read embedding and labels
@@ -207,16 +212,32 @@ def recalc():
         (input_train, output_train) = convert_relations(relations_train, label_subst, m)
         (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
         (input_test, output_test) = convert_relations(relations_test, label_subst, m)
-        # write out inputs and outputs
-        # identify nn
-        NN = glob.glob(files[0]+"/n*")
+        # TODO: write out inputs and outputs
+        file_ls = open(direct+"/inout_train.pickle", "wb")
+        pickle.dump((input_train, output_train), file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+        file_ls = open(direct+"/inout_dev.pickle", "wb")
+        pickle.dump((input_dev, output_dev), file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+        file_ls = open(direct+"/inout_test.pickle", "wb")
+        pickle.dump((input_test, output_test), file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+        # carry on to NNs
+        NN = glob.glob(direct+"/n*")
         for nn in NN:
+            print("processing %s" % nn)
             f = open(nn, "rb")
-            exp = pickle.load(nn)
+            exp = pickle.load(f)
             f.close()
-            reportTrain = classification_report(output_train, exp.network.predict(input_train), digits = 7, labels = np.unique(exp.network.predict(input_train)))
-            reportDev = classification_report(output_dev, exp.network.predict(input_dev), digits = 7, labels = np.unique(exp.network.predict(input_dev)))
-
+            counter = re.sub("neuralnetwork_", "", os.path.basename(nn))
+            counter = re.sub(".pickle", "", os.path.basename(counter))
+            reportTrain = classification_report(output_train, exp.predict(input_train), digits = 7, labels = np.unique(exp.predict(input_train)))
+            reportDev = classification_report(output_dev, exp.predict(input_dev), digits = 7, labels = np.unique(exp.predict(input_dev)))
+            writer.writerow({'Counter': counter, 'ReportTrain': reportTrain, 'ReportDev': reportDev})
+            csvfile.flush()
+        csvfile.close()
+        return 0
+            
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--test", type=str, default="data/en.test/",
@@ -229,7 +250,7 @@ if __name__ == "__main__":
                         help="Path to pretrained embeddings")
     parser.add_argument("--mode", type=str, default="single",
                         help="what to test")
-    parser.add_argument("--name", type=str)
+    parser.add_argument("--name", type=str, default="m_0")
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
     if args.debug:
@@ -244,6 +265,8 @@ if __name__ == "__main__":
         grid(args.train, args.dev, args.test, args)
     elif args.mode == "combination":
         combination(args.train, args.dev, args.test, args)
+    elif args.mode == "recalc":
+        recalc()
     else:
         print("Unknown args")
         sys.exit()
