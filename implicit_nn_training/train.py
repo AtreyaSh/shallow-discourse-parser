@@ -182,7 +182,7 @@ def recalc():
         print("processing %s" % direct)
         # identify labels and embedding
         csvfile = open(direct+'/Results2.csv', 'w')
-        fieldnames = ["Counter", "ReportTrain", "ReportDev"]
+        fieldnames = ["Counter", "ReportTrain", "ReportDev","ReportTest"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         csvfile.flush()
@@ -243,7 +243,8 @@ def recalc():
             counter = re.sub(".pickle", "", os.path.basename(counter))
             reportTrain = classification_report(output_train, exp.predict(input_train), digits = 7, labels = np.unique(exp.predict(input_train)))
             reportDev = classification_report(output_dev, exp.predict(input_dev), digits = 7, labels = np.unique(exp.predict(input_dev)))
-            writer.writerow({'Counter': counter, 'ReportTrain': reportTrain, 'ReportDev': reportDev})
+            reportTest = classification_report(output_test, exp.predict(input_test), digits = 7, labels = np.unique(exp.predict(input_test)))
+            writer.writerow({'Counter': counter, 'ReportTrain': reportTrain, 'ReportDev': reportDev, 'ReportTest': reportTest})
             csvfile.flush()
         csvfile.close()
     return 0

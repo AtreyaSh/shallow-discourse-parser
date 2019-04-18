@@ -12,8 +12,8 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     ''' train neural network, calculate confusion matrix, save neural network'''
     input_train, output_train, input_dev, output_dev, input_test, output_test, label_subst = embeddings
     train_data = (input_train, output_train)
-    test_data = (input_dev, output_dev)
     valid_data = (input_dev, output_dev)
+    test_data = (input_test, output_test)
     accs = []
     train_accs = []
     valid_accs = []
