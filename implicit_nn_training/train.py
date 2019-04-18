@@ -260,7 +260,7 @@ if __name__ == "__main__":
                         help="Path to pretrained embeddings")
     parser.add_argument("--mode", type=str, default="single",
                         help="what to test")
-    parser.add_argument("--name", type=str)
+    parser.add_argument("--name", type=str, default="m_0")
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
     if args.debug:
