@@ -59,7 +59,7 @@ def start_vectors_b(parses_train_filepath, parses_dev_filepath, parses_test_file
     (input_train, output_train) = convert_relations(relations_train, label_subst, m)
     (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
     (input_test, output_test) = convert_relations(relations_test, label_subst, m)
-    (input_blind, output_blind) = convert_relations(relations_blind, label_subst, m)
+    (input_blind, output_blind) = convert_relations(relations_blind_test, label_subst, m)
     return input_train, output_train, input_dev, output_dev, input_test, output_test,input_blind, output_blind, label_subst
 
 if __name__ == "__main__":
