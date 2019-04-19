@@ -193,7 +193,7 @@ def single(trainpath, devpath, testpath, args):
     # train neural network
     method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'adam', 0.0001, 0.6, 0.0001, 0.0001, (1000, 'prelu'), 0.001, 5, 5, "l2", "l2"
     dropout, epochs = False, 50
-    accs, report, recs, precs, f1s = train_keras(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name, 0, 2, False, 100)
+    accs, report, recs, precs, f1s = train_keras(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name, 0, 3, dropout, epochs)
     writer.writerow({ "Name" : args.name,
                                                                 'Test Acc': round(accs[0]*100,5), 'Valid Acc': round(accs[1]*100,5) , "Train Acc": round(accs[2]*100,5), 
                                                                 'Test Recall': round(recs[0],5), 'Valid Recall': round(recs[1],5) , "Train Recall": round(recs[2],5), 
