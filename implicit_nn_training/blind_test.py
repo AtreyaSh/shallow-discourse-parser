@@ -9,6 +9,7 @@ import gensim
 from training.train_NN import train_theanet, train_keras, create_activation, create_model, create_optimizer, create_weight_regularizer
 import sys
 import csv
+from keras import np_utils
 import os
 import json
 import pickle
@@ -85,7 +86,7 @@ if __name__ == "__main__":
         b_reg = create_weight_regularizer(regularization, hidden_lx)
         model = create_model(depth=depth, hidden_nodes=hidden[0], activation_hidden=hidden[1], 
                             activation_output='softmax',output_shape=num_classes, input_shape=train[0].shape[1],
-                            drop=drop, w_reg = w_reg, b_reg = b_reg)
+                            drop=dropout, w_reg = w_reg, b_reg = b_reg)
         opt = create_optimizer(method, learning_rate, momentum, decay)
     
         model.compile(loss='categorical_crossentropy', 
@@ -102,6 +103,11 @@ if __name__ == "__main__":
         metrics.update_metrics(model, dev, "dev")
         metrics.update_metrics(model, test, "test")
         metrics.update_metrics(model, blind, "blind")
+
+        y_true = np.argmax(dataset[1], axis = 1)
+        y_pred = model.predict(dataset[0])
+        y_pred = np.argmax(y_pred, axis=1)
+        print("%s;%s;%s;%s;%s;%s" % ("blind_test", list(y_true), list(y_pred), label_subst)
         
     temp = metrics.get_averages_ordered_by(["train", "dev", "test", "blind"])
     accs, recs, precs, f1s
