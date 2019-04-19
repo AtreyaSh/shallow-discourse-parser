@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import training.train_embedding as trainW
-from training.train_embedding import convert_relations, read_file, RelReader
+from training.train_embedding import convert_relations, convert_relations_modified_m_5, read_file, RelReader
 from training.metrics import Metrics
 import logging
+from tqdm import tqdm
 import gensim
 from training.train_NN import train_theanet, train_keras, create_activation, create_model, create_optimizer, create_weight_regularizer
 import sys
+import numpy as np
 import csv
 from keras.utils import np_utils
 import os
@@ -42,7 +44,7 @@ def start_vectors_b(parses_train_filepath, parses_dev_filepath, parses_test_file
     print("Reading pre-trained word vectors...")
     m.intersect_word2vec_format(googlevecs_filepath, binary=True)
     print("Training segment vectors...")
-    for iter in range(1, 4):
+    for iter in range(1, 20):
         ## Training of word vectors
         m.alpha = 0.01/(2**iter)
         m.min_alpha = 0.01/(2**(iter+1))
@@ -62,7 +64,7 @@ if __name__ == "__main__":
     devpath = "data/en.dev/"
     blindpath = "data/en.blind-test/"
     embpath = "data/GoogleNews-vectors-negative300.bin"
-    embeddings_pickle = "embeddings.pickle"
+    embeddings_pickle = "embeddings_vanilla_20.pickle"
     if (os.path.exists(embeddings_pickle)):
         with open(embeddings_pickle, "rb") as f:
             embeddings = pickle.load(f)
@@ -72,7 +74,7 @@ if __name__ == "__main__":
                                           "%srelations.json" % trainpath, "%srelations.json" % devpath, 
                                           "%srelations.json" % testpath, "%srelations.json" % blindpath,
                                           embpath, "final_test", "blind")
-            with open("embeddings.pickle", "wb") as f:
+            with open("embeddings_vanilla_20.pickle", "wb") as f:
                 pickle.dump(embeddings, f, protocol=pickle.HIGHEST_PROTOCOL)
     method, learning_rate, momentum, decay, regularization = 'adam', 0.0001, 0.6, 0.0001, 0.0001
     hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = (1000, 'prelu'), 0.001, 5, 5, "l2", "l2"
@@ -88,7 +90,7 @@ if __name__ == "__main__":
     blind = (input_blind, np_utils.to_categorical(output_blind, num_classes=num_classes))
     metrics = Metrics()
     metrics.register_datasets(["train", "dev", "test", "blind"])
-    for nexp in range(5):
+    for nexp in tqdm(range(5)):
         w_reg = create_weight_regularizer(decay, weight_lx)
         b_reg = create_weight_regularizer(regularization, hidden_lx)
         model = create_model(depth=depth, hidden_nodes=hidden[0], activation_hidden=hidden[1], 
@@ -103,7 +105,7 @@ if __name__ == "__main__":
                         epochs = epochs, 
                         batch_size = 500,
                         validation_data = (dev[0], dev[1]),
-                        verbose = 1)
+                        verbose = 0)
 
         # Done training, now compute acc, prec etc which only makes sense after training.
         metrics.update_metrics(model, train, "train")
@@ -114,16 +116,18 @@ if __name__ == "__main__":
         y_true = np.argmax(blind[1], axis = 1)
         y_pred = model.predict(blind[0])
         y_pred = np.argmax(y_pred, axis=1)
-        print("%s;%s;%s;%s;%s;%s" % ("blind_test", list(y_true), list(y_pred), label_subst))
+        print("%s;%s;%s;%s" % ("blind_test", list(y_true), list(y_pred), label_subst))
         y_true = np.argmax(test[1], axis = 1)
         y_pred = model.predict(test[0])
         y_pred = np.argmax(y_pred, axis=1)
-        print("%s;%s;%s;%s;%s;%s" % ("test", list(y_true), list(y_pred), label_subst))
+        print("%s;%s;%s;%s" % ("test", list(y_true), list(y_pred), label_subst))
         
         
     temp = metrics.get_averages_ordered_by(["train", "dev", "test", "blind"])
-    accs, recs, precs, f1s
+    accs, recs, precs, f1s = temp
     print("name;acc;rec;prec;f1")
-    print("%s;%s;%s;%s;%s" % ("blind",accs[3],recs[3],precs[3],f1s[3]))
+    print("%s;%s;%s;%s;%s" % ("train",accs[0],recs[0],precs[0],f1s[0]))
     print("%s;%s;%s;%s;%s" % ("test",accs[2],recs[2],precs[2],f1s[2]))  
+    print("%s;%s;%s;%s;%s" % ("dev",accs[1],recs[1],precs[1],f1s[1]))
+    print("%s;%s;%s;%s;%s" % ("blind",accs[3],recs[3],precs[3],f1s[3]))
     ## interface with the training in case mode is single
