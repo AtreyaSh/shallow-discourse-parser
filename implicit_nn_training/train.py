@@ -76,14 +76,14 @@ def grid(trainpath, devpath, testpath, args):
     method = ['adam']
     min_improvements = [0.001]
     learning_rates = [0.0001]
-    w_h = [('l2', 'l1'), ('l1', 'l2'), ('l2','l2')]
+    w_h = [('l2','l2'),('l2', 'l1'), ('l1', 'l2')]
     momentum_alts = [0.4, 0.6]
-    hidden_alts = [60, 100, 500, 1000]
+    hidden_alts = [1000,60, 100, 500]
     act_funcs = ['prelu']
     d_r = [(0.0001, 0.0001)]
     network_depth = [2,3]
     dropout = [False]
-    epochs = [25, 50] # 100 is bad, usually overfitting
+    epochs = [50,25] # 100 is bad, usually overfitting
     ## more parameter options, e.g.:
     #method = ['nag', 'sgd', 'rprop','rmsprop', 'adadelta', 'hf', 'sample','layerwise']
     #min_improvements = [0.001, 0.005, 0.1, 0.2]
