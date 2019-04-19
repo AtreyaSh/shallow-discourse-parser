@@ -10,7 +10,7 @@ from keras.layers.advanced_activations import PReLU
 from keras.layers import Activation
 from keras.callbacks import EarlyStopping
 from keras.regularizers import l2, l1 # for keras 2
-from keras.utils import np_utils, plot_model
+from keras.utils import np_utils
 from keras import optimizers
 import theanets
 from .metrics import Metrics
@@ -127,7 +127,6 @@ def create_model(depth, hidden_nodes, activation_hidden, activation_output, outp
         else:
             output = Dense(output_shape, activation = activation_output)(act2)
         model = Model(inputs = inlayer, outputs = output)
-        plot_model(model, to_file="model.png", show_shapes=True)
         return model
 
     
