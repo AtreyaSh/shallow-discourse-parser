@@ -111,12 +111,19 @@ if __name__ == "__main__":
         metrics.update_metrics(model, test, "test")
         metrics.update_metrics(model, blind, "blind")
 
-        y_true = np.argmax(dataset[1], axis = 1)
-        y_pred = model.predict(dataset[0])
+        y_true = np.argmax(blind[1], axis = 1)
+        y_pred = model.predict(blind[0])
         y_pred = np.argmax(y_pred, axis=1)
         print("%s;%s;%s;%s;%s;%s" % ("blind_test", list(y_true), list(y_pred), label_subst))
+        y_true = np.argmax(test[1], axis = 1)
+        y_pred = model.predict(test[0])
+        y_pred = np.argmax(y_pred, axis=1)
+        print("%s;%s;%s;%s;%s;%s" % ("test", list(y_true), list(y_pred), label_subst))
+        
         
     temp = metrics.get_averages_ordered_by(["train", "dev", "test", "blind"])
     accs, recs, precs, f1s
-    print("%s,%s,%s,%s" % (accs[3],recs[3],precs[3],f1s[3]))    
+    print("name;acc;rec;prec;f1")
+    print("%s;%s;%s;%s;%s" % ("blind",accs[3],recs[3],precs[3],f1s[3]))
+    print("%s;%s;%s;%s;%s" % ("test",accs[2],recs[2],precs[2],f1s[2]))  
     ## interface with the training in case mode is single
