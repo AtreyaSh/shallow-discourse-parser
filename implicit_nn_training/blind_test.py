@@ -59,7 +59,7 @@ if __name__ == "__main__":
     testpath = "data/en.test/"
     trainpath ="data/en.train/"
     devpath = "data/en.dev/"
-    blindpath = "data/en.blind_test/"
+    blindpath = "data/en.blind-test/"
     embpath = "data/GoogleNews-vectors-negative300.bin"
     embeddings = start_vectors_b("%sparses.json" % trainpath, "%sparses.json" % devpath,
                                           "%sparses.json" % testpath, "%sparses.json" % blindpath,
