@@ -79,7 +79,7 @@ if __name__ == "__main__":
     blind = (input_blind, np_utils.to_categorical(output_blind, num_classes=num_classes))
     metrics = Metrics()
     metrics.register_datasets(["train", "dev", "test", "blind"])
-    
+    print(label_subst)
     for nexp in range(5):
         w_reg = create_weight_regularizer(decay, weight_lx)
         b_reg = create_weight_regularizer(regularization, hidden_lx)
