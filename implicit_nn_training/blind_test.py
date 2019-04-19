@@ -17,40 +17,44 @@ import json
 import pickle
 import datetime
 import argparse
+
+def restart():
+    restart = []
+    for data_file in ["pickles/relations_train.pickle","pickles/relations_dev.pickle","pickles/relations_test.pickle", "pickles/relations_blind_test.pickle",
+                "pickles/all_relations_train.pickle","pickles/all_relations_dev.pickle","pickles/all_relations_test.pickle","pickles/all_relations_blind_test.pickle",
+                "pickles/parses.pickle"]:
+        restart.append(pickle.load(open(data_file, "rb")))
+    
+    return tuple(restart)
 def start_vectors_b(parses_train_filepath, parses_dev_filepath, parses_test_filepath, parses_blind_filepath, relations_train_filepath,
                   relations_dev_filepath, relations_test_filepath, relations_blind_filepath, googlevecs_filepath, direct, name):
     """ train vectors """
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
     # Initalize semantic model (with None data)
     m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=20, sg=1, hs = 1)
-    
-    print("Reading from source...")
-    parses = json.load(open(parses_train_filepath))
-    parses.update(json.load(open(parses_dev_filepath)))
-    parses.update(json.load(open(parses_test_filepath)))
-    parses.update(json.load(open(parses_blind_filepath)))
-    (relations_train, all_relations_train) = read_file(relations_train_filepath, parses)
-    (relations_dev, all_relations_dev) = read_file(relations_dev_filepath, parses)
-    (relations_test, all_relations_test) = read_file(relations_test_filepath, parses)
-    (relations_blind, all_relations_blind) = read_file(relations_blind_filepath, parses)
-        
-    relations = relations_train + relations_dev 
-    all_relations = all_relations_train + all_relations_dev + all_relations_blind
+    check = [os.path.exists("pickles/relations_train.pickle"),
+            os.path.exists("pickles/relations_dev.pickle"),
+            os.path.exists("pickles/relations_test.pickle"),
+            os.path.exists("pickles/relations_blind_test.pickle"),
+            os.path.exists("pickles/all_relations_train.pickle"),
+            os.path.exists("pickles/all_relations_dev.pickle"),
+            os.path.exists("pickles/all_relations_test.pickle"),
+            os.path.exists("pickles/all_relations_blind_test.pickle"),
+            os.path.exists("pickles/parses.pickle")]
+    if all(check):
+        print("Reading from cache...")
+        relations_train, relations_dev, relations_test, relations_blind_test, all_relations_train, all_relations_dev, all_relations_test, all_relations_blind_test, parses = restart()
+    else:
+        print("Would read from source...")
+        sys.exit(1)
+
+    relations = relations_train + relations_dev + relations_test + relations_blind_test
     # Substitution dictionary for class labels to integers
     label_subst = dict([(y,x) for x,y in enumerate(set([r[0][0] for r in relations]))])
     print(("Label subst", label_subst))
     print("Build vocabulary...")
-    m.build_vocab(RelReader(all_relations))
-    print("Reading pre-trained word vectors...")
-    m.intersect_word2vec_format(googlevecs_filepath, binary=True)
-    print("Training segment vectors...")
-    for iter in range(1, 20):
-        ## Training of word vectors
-        m.alpha = 0.01/(2**iter)
-        m.min_alpha = 0.01/(2**(iter+1))
-        print("Vector training iter", iter, m.alpha, m.min_alpha)
-        # m.train(ParseReader(parses), total_examples = m.corpus_count, epochs=m.epochs)
-        m.train(RelReader(all_relations), total_examples = m.corpus_count, epochs=m.epochs)
+    with open(sys.argv[1], "rb") as f:
+        m = pickle.load(f)
     # dump pickles to save basic data
     (input_train, output_train) = convert_relations(relations_train, label_subst, m)
     (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
@@ -64,18 +68,19 @@ if __name__ == "__main__":
     devpath = "data/en.dev/"
     blindpath = "data/en.blind-test/"
     embpath = "data/GoogleNews-vectors-negative300.bin"
-    embeddings_pickle = "embeddings_vanilla_20.pickle"
+    embeddings_pickle = "embeddings_loadtest.pickle"
+
     if (os.path.exists(embeddings_pickle)):
         with open(embeddings_pickle, "rb") as f:
             embeddings = pickle.load(f)
     else:
-            embeddings = start_vectors_b("%sparses.json" % trainpath, "%sparses.json" % devpath,
+        embeddings = start_vectors_b("%sparses.json" % trainpath, "%sparses.json" % devpath,
                                           "%sparses.json" % testpath, "%sparses.json" % blindpath,
                                           "%srelations.json" % trainpath, "%srelations.json" % devpath, 
                                           "%srelations.json" % testpath, "%srelations.json" % blindpath,
                                           embpath, "final_test", "blind")
-            with open("embeddings_vanilla_20.pickle", "wb") as f:
-                pickle.dump(embeddings, f, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(embeddings_pickle, "wb") as f:
+            pickle.dump(embeddings, f, protocol=pickle.HIGHEST_PROTOCOL)
     method, learning_rate, momentum, decay, regularization = 'adam', 0.0001, 0.6, 0.0001, 0.0001
     hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = (1000, 'prelu'), 0.001, 5, 5, "l2", "l2"
     dropout, epochs, depth = False, 50, 3
