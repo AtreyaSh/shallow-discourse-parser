@@ -9,7 +9,7 @@ import gensim
 from training.train_NN import train_theanet, train_keras, create_activation, create_model, create_optimizer, create_weight_regularizer
 import sys
 import csv
-from keras import np_utils
+from keras.utils import np_utils
 import os
 import json
 import pickle
@@ -62,16 +62,24 @@ if __name__ == "__main__":
     devpath = "data/en.dev/"
     blindpath = "data/en.blind-test/"
     embpath = "data/GoogleNews-vectors-negative300.bin"
-    embeddings = start_vectors_b("%sparses.json" % trainpath, "%sparses.json" % devpath,
+    embeddings_pickle = "embeddings.pickle"
+    if (os.path.exists(embeddings_pickle)):
+        with open(embeddings_pickle, "rb") as f:
+            embeddings = pickle.load(f)
+    else:
+            embeddings = start_vectors_b("%sparses.json" % trainpath, "%sparses.json" % devpath,
                                           "%sparses.json" % testpath, "%sparses.json" % blindpath,
                                           "%srelations.json" % trainpath, "%srelations.json" % devpath, 
                                           "%srelations.json" % testpath, "%srelations.json" % blindpath,
                                           embpath, "final_test", "blind")
+            with open("embeddings.pickle", "wb") as f:
+                pickle.dump(embeddings, f, protocol=pickle.HIGHEST_PROTOCOL)
     method, learning_rate, momentum, decay, regularization = 'adam', 0.0001, 0.6, 0.0001, 0.0001
     hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = (1000, 'prelu'), 0.001, 5, 5, "l2", "l2"
     dropout, epochs, depth = False, 50, 3
     ''' train neural network, calculate confusion matrix, save neural network'''
     input_train, output_train, input_dev, output_dev, input_test, output_test, input_blind, output_blind, label_subst = embeddings
+    
     
     train = (input_train, np_utils.to_categorical(output_train, num_classes=None))
     num_classes = train[1].shape[1]
@@ -80,7 +88,6 @@ if __name__ == "__main__":
     blind = (input_blind, np_utils.to_categorical(output_blind, num_classes=num_classes))
     metrics = Metrics()
     metrics.register_datasets(["train", "dev", "test", "blind"])
-    print(label_subst)
     for nexp in range(5):
         w_reg = create_weight_regularizer(decay, weight_lx)
         b_reg = create_weight_regularizer(regularization, hidden_lx)
@@ -107,7 +114,7 @@ if __name__ == "__main__":
         y_true = np.argmax(dataset[1], axis = 1)
         y_pred = model.predict(dataset[0])
         y_pred = np.argmax(y_pred, axis=1)
-        print("%s;%s;%s;%s;%s;%s" % ("blind_test", list(y_true), list(y_pred), label_subst)
+        print("%s;%s;%s;%s;%s;%s" % ("blind_test", list(y_true), list(y_pred), label_subst))
         
     temp = metrics.get_averages_ordered_by(["train", "dev", "test", "blind"])
     accs, recs, precs, f1s
