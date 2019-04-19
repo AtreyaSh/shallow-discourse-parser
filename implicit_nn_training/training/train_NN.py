@@ -12,7 +12,6 @@ from keras.callbacks import EarlyStopping
 from keras.regularizers import l2, l1 # for keras 2
 from keras.utils import np_utils, plot_model
 from keras import optimizers
-from tqdm import tqdm
 import theanets
 from .metrics import Metrics
 import warnings
@@ -128,6 +127,7 @@ def create_model(depth, hidden_nodes, activation_hidden, activation_output, outp
         else:
             output = Dense(output_shape, activation = activation_output)(act2)
         model = Model(inputs = inlayer, outputs = output)
+        plot_model(model, to_file="model.png", show_shapes=True)
         return model
 
     
@@ -192,7 +192,6 @@ def train_keras(method, learning_rate, momentum, decay, regularization, hidden,
         #                 initial_epoch = epoch)
 
         # Done training, now compute acc, prec etc which only makes sense after training.
-
         metrics.update_metrics(model, train, "train")
         metrics.update_metrics(model, dev, "dev")
         metrics.update_metrics(model, test, "test")

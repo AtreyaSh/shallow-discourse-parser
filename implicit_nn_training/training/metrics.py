@@ -1,5 +1,7 @@
 import numpy as np
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, confusion_matrix
+from sklearn.utils.multiclass import unique_labels
+
 from collections import defaultdict
 class Metrics():
     """Service class that manages metrics for all dataset on one single training instance"""
@@ -30,6 +32,10 @@ class Metrics():
         y_true = np.argmax(dataset[1], axis = 1)
         y_pred = model.predict(dataset[0])
         y_pred = np.argmax(y_pred, axis=1)
+        print(name)
+        print(y_true)
+        print(y_pred)
+        print("___")
         self.metrics["accs"][name].append(accuracy_score(y_true, y_pred))
         self.metrics["recs"][name].append(recall_score(y_true, y_pred, average="weighted"))
         self.metrics["precs"][name].append(precision_score(y_true, y_pred, average="weighted"))
