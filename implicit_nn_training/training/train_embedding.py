@@ -18,10 +18,6 @@ from nltk.corpus import stopwords
 # train word embeddings
 ####################################
 
-# m_0 -> baseline, m_1 -> negative sampling, m_2 -> new aggregation function
-# m_3 -> excluding stop words, m_4 larger concat window, m_5 -> contexts with exponential decay,
-# m_comb_* -> combinations
-
 def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepath, relations_train_filepath,
                   relations_dev_filepath, relations_test_filepath, googlevecs_filepath, direct, name):
     """ train vectors """
@@ -29,16 +25,12 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
     # Initalize semantic model (with None data)
     if name == "m_1":
         m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=10, sg=1)
-    elif name == "m_1_push":
-        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=20, sg=1)
-    elif name == "m_1_alt":
-        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=10, sg=1, hs = 1)
-    elif name == "m_1_alt_push":
-        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=20, sg=1, hs = 1)
-    elif name == "m_comb3":
+    elif name == "m_8":
         m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=10)
-    elif name == "m_comb4":
+    elif name == "m_9":
         m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=5)
+    elif name == "m_11":
+        m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=20, sg=1)
     else:
         m = gensim.models.word2vec.Word2Vec(None, size=300, window=8, min_count=3, workers=4, negative=0, sg=1)
     print("Reading data...")
@@ -78,8 +70,6 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
         # m.train(ParseReader(parses), total_examples = m.corpus_count, epochs=m.epochs)
         m.train(RelReader(all_relations), total_examples = m.corpus_count, epochs=m.epochs)
     # dump pickles to save basic data
-    dump(direct, name, m, label_subst, relations_train, relations_dev, relations_test,
-         all_relations_train, all_relations_dev, parses)
     if name == "m_2":
         (input_train, output_train) = convert_relations_modified_m_2(relations_train, label_subst, m)
         (input_dev, output_dev) = convert_relations_modified_m_2(relations_dev, label_subst, m)
@@ -96,22 +86,25 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
         (input_train, output_train) = convert_relations_modified_m_5(relations_train, label_subst, m)
         (input_dev, output_dev) = convert_relations_modified_m_5(relations_dev, label_subst, m)
         (input_test, output_test) = convert_relations_modified_m_5(relations_test, label_subst, m)
-    elif name == "m_5_alt":
-        (input_train, output_train) = convert_relations_modified_m_5_alt(relations_train, label_subst, m)
-        (input_dev, output_dev) = convert_relations_modified_m_5_alt(relations_dev, label_subst, m)
-        (input_test, output_test) = convert_relations_modified_m_5_alt(relations_test, label_subst, m)
-    elif name == "m_comb1":
-        (input_train, output_train) = convert_relations_modified_m_comb1(relations_train, label_subst, m)
-        (input_dev, output_dev) = convert_relations_modified_m_comb1(relations_dev, label_subst, m)
-        (input_test, output_test) = convert_relations_modified_m_comb1(relations_test, label_subst, m)
-    elif name == "m_comb2" or name == "m_comb3" or name == "m_comb4":
-        (input_train, output_train) = convert_relations_modified_m_comb2(relations_train, label_subst, m)
-        (input_dev, output_dev) = convert_relations_modified_m_comb2(relations_dev, label_subst, m)
-        (input_test, output_test) = convert_relations_modified_m_comb2(relations_test, label_subst, m)
+    elif name == "m_10":
+        (input_train, output_train) = convert_relations_modified_m_10(relations_train, label_subst, m)
+        (input_dev, output_dev) = convert_relations_modified_m_10(relations_dev, label_subst, m)
+        (input_test, output_test) = convert_relations_modified_m_10(relations_test, label_subst, m)
+    elif name == "m_6":
+        (input_train, output_train) = convert_relations_modified_m_6(relations_train, label_subst, m)
+        (input_dev, output_dev) = convert_relations_modified_m_6(relations_dev, label_subst, m)
+        (input_test, output_test) = convert_relations_modified_m_6(relations_test, label_subst, m)
+    elif name == "m_7" or name == "m_8" or name == "m_9":
+        (input_train, output_train) = convert_relations_modified_m_7(relations_train, label_subst, m)
+        (input_dev, output_dev) = convert_relations_modified_m_7(relations_dev, label_subst, m)
+        (input_test, output_test) = convert_relations_modified_m_7(relations_test, label_subst, m)
     else:
         (input_train, output_train) = convert_relations(relations_train, label_subst, m)
         (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
         (input_test, output_test) = convert_relations(relations_test, label_subst, m)
+    dump(direct, name, m, label_subst, relations_train, relations_dev, relations_test,
+         all_relations_train, all_relations_dev, parses, (input_train, output_train),
+         (input_dev,output_dev), (input_test,output_test))
     return input_train, output_train, input_dev, output_dev, input_test, output_test ,label_subst
 
 def readDump():
@@ -136,11 +129,20 @@ def readDump():
     return relations_train, relations_dev, relations_test, all_relations_train, all_relations_dev, parses
 
 def dump(direct, name, m, label_subst, relations_train, relations_dev, relations_test,
-         all_relations_train, all_relations_dev, parses):
+         all_relations_train, all_relations_dev, parses, inoutTr, inoutDe, inoutTe):
     if not os.path.exists("pickles"):
         os.makedirs("pickles")
     file = open("pickles/"+str(direct)+"/"+str(name)+".pickle", "wb")
     pickle.dump(m, file, protocol=pickle.HIGHEST_PROTOCOL)
+    file.close()
+    file = open("pickles/"+str(direct)+"/inoutTrain.pickle", "wb")
+    pickle.dump(inoutTr, file, protocol=pickle.HIGHEST_PROTOCOL)
+    file.close()
+    file = open("pickles/"+str(direct)+"/inoutDev.pickle", "wb")
+    pickle.dump(inoutDe, file, protocol=pickle.HIGHEST_PROTOCOL)
+    file.close()
+    file = open("pickles/"+str(direct)+"/inoutTest.pickle", "wb")
+    pickle.dump(inoutTe, file, protocol=pickle.HIGHEST_PROTOCOL)
     file.close()
     if not os.path.exists("pickles/"+str(direct)+"/label_subst.pickle"):
         file_ls = open("pickles/"+str(direct)+"/label_subst.pickle", "wb")
@@ -404,7 +406,7 @@ def convert_relations_modified_m_5(relations, label_subst, m):
     outputs = outputs.astype(np.int32)
     return (inputs, outputs)
 
-def convert_relations_modified_m_5_alt(relations, label_subst, m):
+def convert_relations_modified_m_10(relations, label_subst, m):
     inputs = []
     outputs = []
     # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
@@ -460,7 +462,7 @@ def convert_relations_modified_m_5_alt(relations, label_subst, m):
     outputs = outputs.astype(np.int32)
     return (inputs, outputs)
 
-def convert_relations_modified_m_comb1(relations, label_subst, m):
+def convert_relations_modified_m_6(relations, label_subst, m):
     inputs = []
     outputs = []
     # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
@@ -514,7 +516,7 @@ def convert_relations_modified_m_comb1(relations, label_subst, m):
     outputs = outputs.astype(np.int32)
     return (inputs, outputs)
 
-def convert_relations_modified_m_comb2(relations, label_subst, m):
+def convert_relations_modified_m_7(relations, label_subst, m):
     inputs = []
     outputs = []
     # Convert relations: word vectors from segment tokens, aggregate to fix-form vector per segment
