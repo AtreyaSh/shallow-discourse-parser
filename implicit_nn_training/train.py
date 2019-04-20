@@ -4,7 +4,6 @@
 from training.train_NN import train_theanet
 from sklearn.metrics import classification_report
 import training.train_embedding as trainW
-import numpy as np
 import sys
 import csv
 import os
