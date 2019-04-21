@@ -1,6 +1,14 @@
-# Further work on Frankfurt Shallow Discourse Parser
+# Refining Methodologies of the Frankfurt Shallow Discourse Parser
 
-This project is a fork of the official Frankfurt Shallow Discourse Parser and involves building/experimenting on implicit sense labelling components. Development is underway.
+This project is a fork of the official Frankfurt Shallow Discourse Parser and involves modifications of word-embeddings and the downstream feed-forward neural network for implicit shallow discourse sense labelling.
+
+# Table of Contents
+* [Usage](#Usage)
+* [Data Requirements)](#Data Requirements)
+* [Citation](#Citation)
+* [Fork Authors](#Authors)
+
+# Usage
 
 To set up the pre-commit hook that will keep python dependencies up-to-date and automatically download pre-trained google word vectors, please run the following:
 
@@ -8,6 +16,17 @@ To set up the pre-commit hook that will keep python dependencies up-to-date and 
 $ ./init.sh
 ```
 
+For an overview of our functions/models/results, please refer to the [readme](src/README.md) in our `src/` directory.
+
+# Data Requirements
+
+Please copy the following data into the data/ directory:
+
+* Penn Discourse TreeBank (PDTB) 2.0, a 1-million-word Wall Street Journal corpus; there are train, dev, test and blind directories (named en.train/, en.dev/, en.test, and en.blind-test/ respectively). They have to include the parses and relations files (normally called parses.json/relations.json) (http://www.cs.brandeis.edu/~clp/conll16st/rules.html). Simply, place these four folders into the data/ directory.
+
+* GoogleNews-vectors-negative300 (https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM/edit?pref=2&pli=1). This can either be manually downloaded through this link or automatically downloaded by running `init.sh` as described above (useful for server-based applications).
+
+# Citation
 ## The Frankfurt Shallow Discourse Parser
 
 Developed at the Applied Computational Linguistics Lab (ACoLi), Goethe University Frankfurt am Main, Germany.
@@ -28,11 +47,8 @@ Niko Schenk, Christian Chiarcos, Samuel Rönnqvist, Kathrin Donandt, Evgeny A. S
 }
 ```
 
-## Data Requirements
+# Authors
 
-Please copy the following data into the data/ directory:
+Atreya Shankar, Luis Glaser
 
-For English:
-
-- Penn Discourse TreeBank (PDTB) 2.0, a 1-million-word Wall Street Journal corpus; there is a train directory and a dev directory (named en-01-12-16-train/ and en-01-12-16-dev/, respectively). They have to include the parses and relations files (normally called pdtb-parses.json/pdtb-relations.json or parses.json/relations.json) (http://www.cs.brandeis.edu/~clp/conll16st/rules.html). Simply, place these two folders into the data/ directory.
-- GoogleNews-vectors-negative300 (https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM/edit?pref=2&pli=1)
+Cognitive Systems 2018, University of Potsdam
