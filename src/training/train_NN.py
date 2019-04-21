@@ -59,13 +59,12 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
                                             min_improvement=min_improvement,
                                             validate_every=validate_every,
                                             patience=patience)
-    
     metrics.update_metrics(train_data[1], exp.network.predict(train_data[0]), "train")
     metrics.update_metrics(valid_data[1], exp.network.predict(valid_data[0]), "dev")
     metrics.update_metrics(test_data[1], exp.network.predict(test_data[0]), "test")
-    reportTrain = classification_report(train_data[1], exp.network.predict(train_data[0]), digits = 7)
-    reportDev = classification_report(valid_data[1], exp.network.predict(valid_data[0]), digits = 7)
-    reportTest = classification_report(test_data[1], exp.network.predict(test_data[0]), digits = 7)
+    reportTrain = classification_report(train_data[1], exp.network.predict(train_data[0]), digits = 7, output_dict=True)
+    reportDev = classification_report(valid_data[1], exp.network.predict(valid_data[0]), digits = 7, output_dict=True)
+    reportTest = classification_report(test_data[1], exp.network.predict(test_data[0]), digits = 7, output_dict=True)
     file = open("pickles/"+str(direct)+"/neuralnetwork_"+str(name)+".pickle", "wb")
     pickle.dump(exp.network, file, protocol=pickle.HIGHEST_PROTOCOL)
     accs, recs, precs, f1s = metrics.get_averages_ordered_by(["train", "dev", "test"])

@@ -12,50 +12,6 @@ import datetime
 import argparse
 
 ####################################
-# combination hyperparameter search
-####################################
-
-def combination(trainpath, devpath, testpath, args):
-    # example for parameter (learning_rate, min_improvement, method are fix in this code)
-    parameter = [(0.1, 95, "prelu", "l2", 0.0001, "l1", 0.1), (0.3, 100, "prelu", "l2", 0.0001, "l2", 0.1 ),
-                 (0.35, 95, "rect:max", "l1", 0.0001, "l1", 0.1), (0.35, 95, "prelu", "l2", 0.0001, "l1", 0.1),
-                 (0.35, 100, "prelu", "l2", 0.0001, "l1", 0.1), (0.4, 80, "prelu", "l2", 0.0001, "l1", 0.1)]
-    current_time = getCurrentTime()
-    current_run_name = "%s_%s" % (current_time, args.name)
-    os.makedirs("pickles/"+current_run_name)
-    csvfile = open('pickles/'+ current_run_name + '/Results.csv', 'w')
-    fieldnames = ['VectorTraining','NN Training', 'Train Acc', 'Dev Acc', 'Test Acc', "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", 'ReportTrain','ReportDev','ReportTest']
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    writer.writeheader()
-    csvfile.flush()
-    counter_vec = 0
-    counter_nn = 0
-    for iter1 in range(1,4):
-        #train vectors 3x
-        if args.debug:
-            embeddings = restart()
-        else:
-            embeddings = trainW.start_vectors("%sparses.json" % trainpath, "%sparses.json" % devpath,
-                                              "%sparses.json" % testpath, "%srelations.json" % trainpath,
-                                              "%srelations.json" % devpath, "%srelations.json" % testpath,
-                                              args.emb, current_run_name, args.name)
-        for iter2 in range(len(parameter)*5):
-            #for each trained vectors train each NN parameter combination 5x
-            if iter2%5 == 0:
-                triple = parameter[iter2//5]
-            accs, reportTrain,reportDev,reportTest, _, _, _ = train_theanet('nag', 0.0001, triple[0],
-                                                                             triple[4], triple[6],(triple[1],triple[2]), 0.001, 5,5, 
-                                                                             triple[3], triple[5], embeddings, current_run_name, str(counter_vec)+"_"+str(counter_nn))
-            writer.writerow({'VectorTraining': counter_vec ,'NN Training': counter_nn,  'Train Acc': round(accs[0],5), 'Dev Acc': round(accs[1],5) , 
-                   "Test Acc": round(accs[2],5), "MinImprov": 0.001, "Method": "nag", "LernR": 0.0001,"Momentum":triple[0], 
-                   "Decay":"{0}={1}".format(triple[3], triple[4]), "Regular.": "{0}={1}".format(triple[5],triple[6]), "Hidden": 
-                   "({0}, {1})".format(triple[1],triple[2]),'ReportTrain': reportTrain, 'ReportDev': reportDev, 'ReportTest': reportTest})
-            counter_nn+=1
-            csvfile.flush()
-        counter_vec+=1
-    csvfile.close()
-
-####################################
 # grid-based hyperparameter search
 ####################################
 
@@ -121,10 +77,11 @@ def grid(trainpath, devpath, testpath, args):
                                                         'Train F1': round(f1s[0],5), 'Dev F1': round(f1s[1],5) , "Test F1": round(f1s[2],5), 
                                                         "MinImprov": i, "Method": h, "LernR": j,
                                                         "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
-                                                        "Hidden": "({0}, {1})".format(l,m), 'ReportTrain': reportTrain, 'ReportDev': reportDev, 'ReportTest': reportTest})
+                                                        "Hidden": "({0}, {1})".format(l,m), 'ReportTrain': str(reportTrain), 'ReportDev': str(reportDev), 'ReportTest': str(reportTest)})
                                         counter += 1
                                         csvfile.flush()
     csvfile.close()
+    return 0
 
 ####################################
 # single hyperparameter search
@@ -148,7 +105,7 @@ def single(trainpath, devpath, testpath, args):
                                           "%sparses.json" % testpath, "%srelations.json" % trainpath,
                                           "%srelations.json" % devpath, "%srelations.json" % testpath,
                                           args.emb, current_run_name, args.name)
-    # train neural network    
+    # train neural network 
     method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'nag', 0.0001, 0.95, 0.0001, 0.0001, (80, 'rect:max'), 0.001, 5, 5, "l1", "l1"
     accs, reportTrain, reportDev, reportTest, recs, precs, f1s = train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name)
     writer.writerow({'Train Acc': round(accs[0],5), 'Dev Acc': round(accs[1],5) , "Test Acc": round(accs[2],5), 
@@ -157,9 +114,10 @@ def single(trainpath, devpath, testpath, args):
                                                         'Train F1': round(f1s[0],5), 'Dev F1': round(f1s[1],5) , "Test F1": round(f1s[2],5), 
                                                      "MinImprov": min_improvement, "Method": method, "LernR": learning_rate,
                                                      "Momentum":momentum, "Decay":"{0}={1}".format(weight_lx, decay), "Regular.": "{0}={1}".format(hidden_lx, regularization),
-                                                     "Hidden": "({0}, {1})".format(hidden[0],hidden[1]), 'ReportTrain': reportTrain, 'ReportDev': reportDev, 'ReportTest': reportTest})
+                                                     "Hidden": "({0}, {1})".format(hidden[0],hidden[1]), 'ReportTrain': str(reportTrain), 'ReportDev': str(reportDev), 'ReportTest': str(reportTest)})
     csvfile.flush()
     csvfile.close()
+    return 0
 
 ####################################
 # aux functions/debugging
@@ -213,7 +171,7 @@ if __name__ == "__main__":
     parser.add_argument("--emb", type=str, default="data/GoogleNews-vectors-negative300.bin",
                         help="Path to pretrained google embeddings, defaults to data/GoogleNews-vectors-negative300.bin")
     parser.add_argument("--mode", type=str, default="single",
-                        help="Type of NN hyperparameter search, possibilities are 'single', 'grid' and 'combination', defaults to 'single'")
+                        help="Type of NN hyperparameter search, possibilities are 'single', 'grid', defaults to 'single'")
     parser.add_argument("--name", type=str, default = "m_1",
                         help="Word-embedding model to be used such as 'm_0', 'm_1', 'm_2' ... 'm_11', defaults to 'm_1'")
     parser.add_argument("--debug", action="store_true",
@@ -229,8 +187,6 @@ if __name__ == "__main__":
         single(args.train, args.dev, args.test, args)
     elif args.mode == "grid":
         grid(args.train, args.dev, args.test, args)
-    elif args.mode == "combination":
-        combination(args.train, args.dev, args.test, args)
     else:
         print("Unknown args")
         sys.exit()

@@ -1,5 +1,5 @@
 # ignore all except following
 *
 !.gitignore
-!best/
+!2019_04_11_21_03_37_m_1_best/
 !readme.txt
