@@ -1,4 +1,4 @@
-# Table of Contents
+## Table of Contents
 
 * [Word-Embedding Models](## Word-Embedding Models)
 * [Usage](## Usage)

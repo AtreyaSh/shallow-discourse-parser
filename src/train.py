@@ -15,10 +15,6 @@ import argparse
 # combination hyperparameter search
 ####################################
 
-# TODO: save best models
-# TODO: change documentation, show how to train models, explain best model and how it works
-# TODO: put picture of results of models, and perhaps also accuracy numerics
-
 def combination(trainpath, devpath, testpath, args):
     # example for parameter (learning_rate, min_improvement, method are fix in this code)
     parameter = [(0.1, 95, "prelu", "l2", 0.0001, "l1", 0.1), (0.3, 100, "prelu", "l2", 0.0001, "l2", 0.1 ),
