@@ -1,6 +1,6 @@
 ## Modifications to the Frankfurt Shallow Discourse Parser (Schenk et al. 2016)
 
-Our modifications performed optimally in the word-embeddings component of the Frankfurt Shallow Discourse Parser. Our best model exceed the baseline model by an F1-score of 0.46%. More detailed information on our models/runs can be found below.
+Our modifications performed optimally in the word-embeddings component of the Frankfurt Shallow Discourse Parser. Our best model exceeded the baseline model by an F1-score of 0.46%. More detailed information on our models/runs can be found below.
 
 ## Table of Contents
 
