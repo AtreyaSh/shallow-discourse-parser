@@ -104,10 +104,10 @@ required named arguments:
                         path to network 2
 ```
 
-Here is an example run of this script:
+Note: Here is an example run of this script:
 
 ```shell
-$ python3 compare_comparison.py -n1 ./pickles/2019_04_11_21_02_39_m_0/neuralnetwork_37.pickle \
+$ python3 compare_combination.py -n1 ./pickles/2019_04_11_21_02_39_m_0/neuralnetwork_37.pickle \
 -n2 ./pickles/2019_04_11_21_03_37_m_1/neuralnetwork_59.pickle
 ```
 
