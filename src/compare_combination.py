@@ -65,10 +65,10 @@ def combination(network1, network2, iterations = 20):
         ID = str(countW)+"_"+str(countN)
         for _ in range(iterations):
             counter = ID+"_"+str(counter)
-            accs, reportTrain, reportDev, reportTest, recs, precs, f1s = train_theanet(method, learning_rate, 
-                                                                                       momentum, decay, 
-                                                                                       regularization, hidden, 
-                                                                                       min_improvement, 
+            accs, reportTrain, reportDev, reportTest, recs, precs, f1s = train_theanet(method, float(learning_rate), 
+                                                                                       float(momentum), float(decay), 
+                                                                                       float(regularization), hidden, 
+                                                                                       float(min_improvement), 
                                                                                        validate_every, 
                                                                                        patience, weight_lx, 
                                                                                        hidden_lx, embeddings, 
