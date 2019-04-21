@@ -55,7 +55,8 @@ def combination(network1, network2, iterations = 20):
         learning_rate = df['LernR'].tolist()[0]
         momentum = df['Momentum'].tolist()[0]
         min_improvement = df['MinImprov'].tolist()[0]
-        hidden = df['Hidden'].tolist()[0]
+        hidden1, hidden2 = [re.sub(r"[() ]", "", o) for o in df['Hidden'].tolist()[0].split(",")]
+        hidden = (int(hidden1), str(hidden2),)
         weight_lx, decay = df['Decay'].tolist()[0].split("=")
         hidden_lx, regularization = df['Regular.'].tolist()[0].split("=")
         validate_every = 5 

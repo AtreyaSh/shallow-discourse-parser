@@ -1,7 +1,7 @@
-nltk==3.3
-numpy==1.16.2
-theanets.egg==info
 gensim==3.7.1
+nltk==3.3
 pandas==0.24.1
+theanets.egg==info
+numpy==1.16.2
 scikit_learn==0.20.3
 theanets==0.7.3
