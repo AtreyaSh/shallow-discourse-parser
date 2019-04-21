@@ -51,13 +51,13 @@ def combination(network1, network2, iterations = 20):
             df = df.loc[df['Counter'] == int(countN)]
         # derive model parameters from imports and csv file
         embeddings = (input_train, output_train, input_dev, output_dev, input_test, output_test, label_subst)
-        method = df["Method"][0]
-        learning_rate = df['LernR'][0]
-        momentum = df['Momentum'][0]
-        min_improvement = df['MinImprov'][0]
-        hidden = df['Hidden'][0]
-        weight_lx, decay = df['Decay'][0].split("=")
-        hidden_lx, regularization = df['Regular.'][0].split("=")
+        method = df["Method"].tolist()[0]
+        learning_rate = df['LernR'].tolist()[0]
+        momentum = df['Momentum'].tolist()[0]
+        min_improvement = df['MinImprov'].tolist()[0]
+        hidden = df['Hidden'].tolist()[0]
+        weight_lx, decay = df['Decay'].tolist()[0].split("=")
+        hidden_lx, regularization = df['Regular.'].tolist()[0].split("=")
         validate_every = 5 
         patience = 5
         counter = 0
