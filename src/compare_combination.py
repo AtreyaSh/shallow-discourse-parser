@@ -18,7 +18,7 @@ import pandas as pd
 
 def combination(network1, network2, iterations = 20):    
     current_time = getCurrentTime()
-    current_run_name = "%s_%s" % (current_time, args.name)
+    current_run_name = "%s_%s" % (current_time, "comparison")
     os.makedirs("pickles/"+current_run_name)
     csvfile = open('pickles/'+ current_run_name + '/Results.csv', 'w')
     fieldnames = ['Counter','Word-Model','Neural-Model','Train Acc', 'Dev Acc', 'Test Acc', "Train Recall","Dev Recall", "Test Recall","Train Precision", "Dev Precision","Test Precision" , "Train F1", "Dev F1","Test F1", "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", 'ReportTrain','ReportDev','ReportTest']
