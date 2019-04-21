@@ -1,14 +1,14 @@
-# Refining Methodologies of the Frankfurt Shallow Discourse Parser
+## Refining Methodologies of the Frankfurt Shallow Discourse Parser
 
 This project is a fork of the official Frankfurt Shallow Discourse Parser and involves modifications of word-embeddings and the downstream feed-forward neural network for implicit shallow discourse sense labelling.
 
-# Table of Contents
-* [Usage](#Usage)
-* [Data Requirements)](#Data Requirements)
-* [Citation](#Citation)
-* [Fork Authors](#Authors)
+## Table of Contents
+* [Usage](## Usage)
+* [Data Requirements](## Data Requirements)
+* [Citation](## Citation)
+* [Fork Authors](## Authors)
 
-# Usage
+## Usage
 
 To set up the pre-commit hook that will keep python dependencies up-to-date and automatically download pre-trained google word vectors, please run the following:
 
@@ -18,7 +18,7 @@ $ ./init.sh
 
 For an overview of our functions/models/results, please refer to the [readme](src/README.md) in our `src/` directory.
 
-# Data Requirements
+## Data Requirements
 
 Please copy the following data into the data/ directory:
 
@@ -26,8 +26,8 @@ Please copy the following data into the data/ directory:
 
 * GoogleNews-vectors-negative300 (https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM/edit?pref=2&pli=1). This can either be manually downloaded through this link or automatically downloaded by running `init.sh` as described above (useful for server-based applications).
 
-# Citation
-## The Frankfurt Shallow Discourse Parser
+## Citation
+### The Frankfurt Shallow Discourse Parser
 
 Developed at the Applied Computational Linguistics Lab (ACoLi), Goethe University Frankfurt am Main, Germany.
 
@@ -47,7 +47,7 @@ Niko Schenk, Christian Chiarcos, Samuel Rönnqvist, Kathrin Donandt, Evgeny A. S
 }
 ```
 
-# Authors
+## Authors
 
 Atreya Shankar, Luis Glaser
 
