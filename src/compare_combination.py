@@ -74,7 +74,7 @@ def combination(network1, network2, iterations = 20):
                                                                                        hidden_lx, embeddings, 
                                                                                        direct=current_run_name, 
                                                                                        name=counterName)
-            writer.writerow({'Counter':counter,'Word-Model':wFile,'Neural-Model':network,
+            writer.writerow({'Counter':str(counter),'Word-Model':wFile,'Neural-Model':network,
                             'Train Acc': round(accs[0],5), 'Dev Acc': round(accs[1],5) , "Test Acc": round(accs[2],5), 
                             'Train Recall': round(recs[0],5), 'Dev Recall': round(recs[1],5) , "Test Recall": round(recs[2],5), 
                             'Train Precision': round(precs[0],5), 'Dev Precision': round(precs[1],5) , "Test Precision": round(precs[2],5), 
