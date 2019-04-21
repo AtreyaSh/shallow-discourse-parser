@@ -1,8 +1,8 @@
 ## Table of Contents
 
-* [Word-Embedding Models](## Word-Embedding Models)
-* [Usage](## Usage)
-* [Results](## Results)
+* [Word-Embedding Models](#Word-Embedding-Models)
+* [Usage](#Usage)
+* [Results](#Results)
 
 ## Word-Embedding Models
 
@@ -30,7 +30,7 @@ sampled word for training
 Below are the word-embedding models that we tested with the corresponding parameters. M<sub>0</sub> corresponds to the baseline embedding that we obtained from the Frankfurt Shallow Discourse Parser. Therefore, this is baseline embedding for us to compare against. All other models are therefore computed by varying relevant parameters.
 
 | Model | negative | sg | hs | final dimension | aggregation | context | stop |
-|---|---|---|---|---|
+|---|---|---|---|---|---|---|---|
 | M<sub>0</sub> | 0 | 1 | 1 | 600 | 0 | 0 | 0 |
 | M<sub>1</sub> | 10 | 1 | 0 | 600 | 0 | 0 | 0 |
 | M<sub>2</sub> | 0 | 1 | 1 | 600 | 1 | 0 | 0 |
@@ -97,7 +97,7 @@ The results of running the 12 models above, via a `grid` search producing 72 neu
 The best dev/test F1-scores per word-embedding model have been tabulated below.
 
 | Model | best dev-F1 | best test-F1 |
-|---|---|---|---|---|
+|---|---|---|
 | M<sub>0</sub> | *0.4319465* | *0.3593190* |
 | M<sub>1</sub> | **0.4395718** | **0.3639238** |
 | M<sub>2</sub> | 0.4256447 | 0.3543410 |
