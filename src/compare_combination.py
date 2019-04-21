@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import training.train_embedding as trainW
 from training.train_embedding import convert_relations
 from training.train_NN import train_theanet
 import csv
@@ -16,7 +17,7 @@ import pandas as pd
 # combination hyperparameter search
 ####################################
 
-def combination(network1, network2, iterations = 20):    
+def combination(trainpath, devpath, testpath, vecpath, network1, network2, iterations = 20):
     current_time = getCurrentTime()
     current_run_name = "%s_%s" % (current_time, "comparison")
     os.makedirs("pickles/"+current_run_name)
@@ -30,27 +31,11 @@ def combination(network1, network2, iterations = 20):
         countN = re.sub(r"[^\d+]", "", os.path.basename(network))
         wFile = glob.glob(os.path.dirname(network)+"/m*")[0]
         countW = re.sub(r"[^\d+]", "", os.path.basename(wFile))
-        f = open(os.path.dirname(network)+"/inout_train.pickle", "rb")
-        input_train, output_train = pickle.load(f)
-        f.close()
-        f = open(os.path.dirname(network)+"/inout_dev.pickle", "rb")
-        input_dev, output_dev = pickle.load(f)
-        f.close()
-        f = open(os.path.dirname(network)+"/inout_test.pickle", "rb")
-        input_test, output_test = pickle.load(f)
-        f.close()
-        f = open(os.path.dirname(network)+"/label_subst.pickle", "rb")
-        label_subst = pickle.load(f)
-        f.close()
-        f = open(wFile, "rb")
-        embeddings = pickle.load(f)
-        f.close()
         # find model parameters
         df = pd.read_csv(os.path.dirname(network)+"/Results.csv")
         if "Counter" in df.keys():
             df = df.loc[df['Counter'] == int(countN)]
         # derive model parameters from imports and csv file
-        embeddings = (input_train, output_train, input_dev, output_dev, input_test, output_test, label_subst)
         method = df["Method"].tolist()[0]
         learning_rate = df['LernR'].tolist()[0]
         momentum = df['Momentum'].tolist()[0]
@@ -65,6 +50,10 @@ def combination(network1, network2, iterations = 20):
         ID = str(countW)+"_"+str(countN)
         for _ in range(iterations):
             counterName = ID+"_"+str(counter)
+            embeddings = trainW.start_vectors("%sparses.json" % trainpath, "%sparses.json" % devpath,
+                                              "%sparses.json" % testpath, "%srelations.json" % trainpath,
+                                              "%srelations.json" % devpath, "%srelations.json" % testpath,
+                                              vecpath, current_run_name, "m_"+countW)
             accs, reportTrain, reportDev, reportTest, recs, precs, f1s = train_theanet(method, float(learning_rate), 
                                                                                        float(momentum), float(decay), 
                                                                                        float(regularization), hidden, 
@@ -74,7 +63,7 @@ def combination(network1, network2, iterations = 20):
                                                                                        hidden_lx, embeddings, 
                                                                                        direct=current_run_name, 
                                                                                        name=counterName)
-            writer.writerow({'Counter':str(counter),'Word-Model':wFile,'Neural-Model':network,
+            writer.writerow({'Counter':str(counter),'Word-Model':"m_"+countW,'Neural-Model':countN,
                             'Train Acc': round(accs[0],5), 'Dev Acc': round(accs[1],5) , "Test Acc": round(accs[2],5), 
                             'Train Recall': round(recs[0],5), 'Dev Recall': round(recs[1],5) , "Test Recall": round(recs[2],5), 
                             'Train Precision': round(precs[0],5), 'Dev Precision': round(precs[1],5) , "Test Precision": round(precs[2],5), 
@@ -130,6 +119,14 @@ def import_pickle(path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--train", type=str, default="data/en.train/",
+                        help="Path to train data folder, defaults to data/en.train/")
+    parser.add_argument("--dev", type=str, default="data/en.dev/",
+                        help="Path to development data folder, defaults to data/en.dev/")
+    parser.add_argument("--test", type=str, default="data/en.test/",
+                        help="Path to test data folder, defaults to data/en.test/")
+    parser.add_argument("--emb", type=str, default="data/GoogleNews-vectors-negative300.bin",
+                        help="Path to pretrained google embeddings, defaults to data/GoogleNews-vectors-negative300.bin")
     parser.add_argument("--iterations", type=int, default=20,
                         help="number of iterations for each network, defaults to 20")
     requiredNamed = parser.add_argument_group('required named arguments')
@@ -137,4 +134,4 @@ if __name__ == "__main__":
     requiredNamed.add_argument('-n2', '--network2', help='path to network 2', required=True)
     args = parser.parse_args()
     # make combination run
-    combination(args.network1, args.network2, args.iterations)
+    combination(args.train, args.dev, args.test, args.emb, args.network1, args.network2, args.iterations)
