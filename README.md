@@ -1,4 +1,4 @@
-## Refining Methodologies of the Frankfurt Shallow Discourse Parser
+## Refining Methodologies of the Frankfurt Shallow Discourse Parser (Schenk et al. 2016)
 
 This project is a fork of the official Frankfurt Shallow Discourse Parser and involves modifications of word-embeddings and the downstream feed-forward neural network for implicit shallow discourse sense labelling.
 
