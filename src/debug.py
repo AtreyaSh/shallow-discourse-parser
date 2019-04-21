@@ -3,6 +3,10 @@
 
 import os
 
+###################################
+# sample runs for checking
+###################################
+
 # run single instance, old embedding m_0
 os.system("python3 train.py \
           --name m_0")
@@ -16,7 +20,7 @@ os.system("python3 train.py \
           --mode combination --name m_0")
 
 ###################################
-# code for debugging
+# sample variables for debugging
 ###################################
 
 parses_train_filepath = "./data/en.train/parses.json"

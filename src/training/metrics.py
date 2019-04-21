@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from collections import defaultdict
 
 class Metrics():
-    
     """Service class that manages metrics for all dataset on one single training instance"""
     def __init__(self):
         self.metrics = {
@@ -21,7 +23,6 @@ class Metrics():
         """Put a dataset """
         if any(name in metric.keys() for metric in self.metrics.values()):
             print("Dataset %s already registered!\nThis causes the metrics to be reset." % name)
-        
         for metric in self.metrics.keys():
             # create a new empty list of metrics for the dataset
             self.metrics[metric][name] = []

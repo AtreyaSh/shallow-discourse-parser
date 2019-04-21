@@ -9,7 +9,6 @@ def parses_load(parses_file):
         data = json.load(data_file)
     return data
 
-
 def get_words_dict(parses_file):
     ''' create a dict with DocID as keys and list of triples (sent_id, token_id, token) for each word as values'''
     data = parses_load(parses_file)
@@ -27,7 +26,6 @@ def get_words_dict(parses_file):
             counter_token=0#counting token_id in sentence, not in whole text
         docID_words_dict[wsj_id] = words
     return docID_words_dict
-
 
 def subst_id_words(filename, parses_file):
     ''' substitute the TokenList of [filename] by the new TokenList (with list [sent_id, token_id] for each token) '''
