@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-####################################
-# import dependencies
-####################################
-
 import json
 import gensim
 import logging
