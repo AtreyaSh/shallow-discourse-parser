@@ -1,6 +1,6 @@
 ## Modifications to the Frankfurt Shallow Discourse Parser (Schenk et al. 2016)
 
-This project is a fork of the official Frankfurt Shallow Discourse Parser and involves modifications of word-embeddings and the downstream feed-forward neural network for implicit shallow discourse sense labelling.
+This project is a fork of the official Frankfurt Shallow Discourse Parser and involves modifications of word-embeddings and the downstream feed-forward neural network for implicit shallow discourse sense labelling. Our project paper for this research can be found here as `report_SDP.pdf`.
 
 ## Table of Contents
 * [Usage](#Usage)

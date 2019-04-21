@@ -6,7 +6,6 @@
 
 # intermediate files
 *.cs
-implicit_nn_training/pickles/*
 
 # docs
 docs/paper*
@@ -17,7 +16,3 @@ conll2016.zip
 # development environs
 .idea
 .vscode
-
-# shankar local
-brainstorm.md
-paper.pdf

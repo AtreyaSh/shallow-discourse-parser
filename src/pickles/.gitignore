@@ -1,0 +1,5 @@
+# ignore all except following
+*
+!.gitignore
+!best/
+!readme.txt

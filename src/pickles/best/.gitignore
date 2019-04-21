@@ -1,0 +1,8 @@
+*
+!.gitignore
+!inout_dev.pickle
+!inout_train.pickle
+!inout_test.pickle
+!label_subst.pickle
+!m_1.pickle
+!neuralnetwork_59.pickle
