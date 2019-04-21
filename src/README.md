@@ -66,24 +66,48 @@ optional arguments:
   --emb EMB      Path to pretrained google embeddings, defaults to
                  data/GoogleNews-vectors-negative300.bin
   --mode MODE    Type of NN hyperparameter search, possibilities are 'single',
-                 'grid' and 'combination', defaults to 'single'
+                 'grid', defaults to 'single'
   --name NAME    Word-embedding model to be used such as 'm_0', 'm_1', 'm_2'
                  ... 'm_11', defaults to 'm_1'
   --debug        Enter debugging mode
 ```
 
-We implemented 3 modes of searching for neural network hyperparameters given a word-embedding model.
+We implemented 2 modes of searching for neural network hyperparameters given a word-embedding model.
 
 1. The "single" mode simply uses a user-defined set of parameters, which is essentially one run. These default to the parameters from our best run. The user can redefine these parameters within the source-code in `train.py`.
 
 2. The "grid" mode defines a set of possible values for hyperparameters and essentially conducts a grid-wise search to find the best combination. A total of 72 models will be tested using this mode.
 
-3. The "combination" mode tests each word embedding with a given set of parameters repeatedly instead of only once, in order to get the best results out of otherwise randomly assigned starting weights. This mode has not been heavily tested on our end, so do proceed with caution.
-
 Note: An example of running this file:
 
 ```shell
 $ python3 train.py --mode grid --name m_11
+```
+
+### Running compare_combination.py
+
+After running `train.py`, one can compare different models to find which ones had the best performance. In order to compare two different models (eg. a modified model vs. baseline model), one can use `compare_combination.py`. This dedicated scripts runs the baseline and a possible optimal model repeatedly and logs their accuracies. These accuracies can then be used to detect statistically significant changes.
+
+```
+usage: compare_combination.py [-h] [--iterations ITERATIONS] -n1 NETWORK1 -n2
+                              NETWORK2
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --iterations ITERATIONS
+                        number of iterations for each network, defaults to 20
+
+required named arguments:
+  -n1 NETWORK1, --network1 NETWORK1
+                        path to network 1
+  -n2 NETWORK2, --network2 NETWORK2
+                        path to network 2
+```
+
+Here is an example run of this script:
+
+```shell
+$ python3 compare_comparison.py -n1 ./pickles/2019_04_11_21_02_39_m_0/neuralnetwork_37.pickle -n2 ./pickles/2019_04_11_21_03_37_m_1/neuralnetwork_59.pickle
 ```
 
 ### Model/Results Logging

@@ -64,7 +64,7 @@ def combination(network1, network2, iterations = 20):
         counter = 0
         ID = str(countW)+"_"+str(countN)
         for _ in range(iterations):
-            counter = ID+"_"+str(counter)
+            counterName = ID+"_"+str(counter)
             accs, reportTrain, reportDev, reportTest, recs, precs, f1s = train_theanet(method, float(learning_rate), 
                                                                                        float(momentum), float(decay), 
                                                                                        float(regularization), hidden, 
@@ -73,7 +73,7 @@ def combination(network1, network2, iterations = 20):
                                                                                        patience, weight_lx, 
                                                                                        hidden_lx, embeddings, 
                                                                                        direct=current_run_name, 
-                                                                                       name=counter)
+                                                                                       name=counterName)
             writer.writerow({'Counter':counter,'Word-Model':wFile,'Neural-Model':network,
                             'Train Acc': round(accs[0],5), 'Dev Acc': round(accs[1],5) , "Test Acc": round(accs[2],5), 
                             'Train Recall': round(recs[0],5), 'Dev Recall': round(recs[1],5) , "Test Recall": round(recs[2],5), 
@@ -131,7 +131,7 @@ def import_pickle(path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--iterations", type=int, default=20,
-                        help="number of iterations for each network")
+                        help="number of iterations for each network, defaults to 20")
     requiredNamed = parser.add_argument_group('required named arguments')
     requiredNamed.add_argument('-n1', '--network1', help='path to network 1', required=True)
     requiredNamed.add_argument('-n2', '--network2', help='path to network 2', required=True)
