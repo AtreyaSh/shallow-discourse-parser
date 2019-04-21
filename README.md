@@ -4,7 +4,7 @@ This project is a fork of the official Frankfurt Shallow Discourse Parser and in
 
 ## Table of Contents
 * [Usage](#Usage)
-* [Data Requirements](#Data Requirements)
+* [Data Requirements](#Data-Requirements)
 * [Citation](#Citation)
 * [Fork Authors](#Authors)
 
