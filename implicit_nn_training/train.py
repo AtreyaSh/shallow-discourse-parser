@@ -11,9 +11,12 @@ import pickle
 import datetime
 import argparse
 
-def create_training_parameters(parameter_lists):
-    """function that creates all possible parameter combinations"""
-    pass
+####################################
+# combination hyperparameter search
+####################################
+
+# TODO: save best models
+# TODO: change documentation, show how to train models, show how to use best model
 
 def combination(trainpath, devpath, testpath, args):
     # example for parameter (learning_rate, min_improvement, method are fix in this code)
@@ -24,7 +27,7 @@ def combination(trainpath, devpath, testpath, args):
     current_run_name = "%s_%s" % (current_time, args.name)
     os.makedirs("pickles/"+current_run_name)
     csvfile = open('pickles/'+ current_run_name + '/Results.csv', 'w')
-    fieldnames = ['VectorTraining','NN Training', 'Test Acc', 'Valid Acc', 'Train Acc', "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", 'ReportTrain','ReportDev','ReportTest']
+    fieldnames = ['VectorTraining','NN Training', 'Train Acc', 'Dev Acc', 'Test Acc', "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", 'ReportTrain','ReportDev','ReportTest']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.flush()
@@ -46,8 +49,8 @@ def combination(trainpath, devpath, testpath, args):
             accs, reportTrain,reportDev,reportTest, _, _, _ = train_theanet('nag', 0.0001, triple[0],
                                                                              triple[4], triple[6],(triple[1],triple[2]), 0.001, 5,5, 
                                                                              triple[3], triple[5], embeddings, current_run_name, str(counter_vec)+"_"+str(counter_nn))
-            writer.writerow({'VectorTraining': counter_vec ,'NN Training': counter_nn,  'Test Acc': round(accs[0]*100,5), 'Valid Acc': round(accs[1]*100,5) , 
-                   "Train Acc": round(accs[2]*100,5), "MinImprov": 0.001, "Method": "nag", "LernR": 0.0001,"Momentum":triple[0], 
+            writer.writerow({'VectorTraining': counter_vec ,'NN Training': counter_nn,  'Train Acc': round(accs[0],5), 'Dev Acc': round(accs[1],5) , 
+                   "Test Acc": round(accs[2],5), "MinImprov": 0.001, "Method": "nag", "LernR": 0.0001,"Momentum":triple[0], 
                    "Decay":"{0}={1}".format(triple[3], triple[4]), "Regular.": "{0}={1}".format(triple[5],triple[6]), "Hidden": 
                    "({0}, {1})".format(triple[1],triple[2]),'ReportTrain': reportTrain, 'ReportDev': reportDev, 'ReportTest': reportTest})
             counter_nn+=1
@@ -55,12 +58,16 @@ def combination(trainpath, devpath, testpath, args):
         counter_vec+=1
     csvfile.close()
 
+####################################
+# grid-based hyperparameter search
+####################################
+
 def grid(trainpath, devpath, testpath, args):
     current_time = getCurrentTime()
     current_run_name = "%s_%s" % (current_time, args.name)
     os.makedirs("pickles/"+current_run_name)
     csvfile = open('pickles/'+ current_run_name + '/' + 'Results.csv', 'w')
-    fieldnames = ['Counter','Test Acc', 'Valid Acc', 'Train Acc', "Test Recall","Valid Recall", "Train Recall","Test Precision", "Valid Precision","Train Precision" , "Test F1", "Valid F1","Train F1", "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", 'ReportTrain','ReportDev','ReportTest']
+    fieldnames = ['Counter','Train Acc', 'Dev Acc', 'Test Acc', "Train Recall","Dev Recall", "Test Recall","Train Precision", "Dev Precision","Test Precision" , "Train F1", "Dev F1","Test F1", "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", 'ReportTrain','ReportDev','ReportTest']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.flush()
@@ -111,10 +118,10 @@ def grid(trainpath, devpath, testpath, args):
                                                                                             hidden=(l, m), min_improvement=i, validate_every=5, patience=5,
                                                                                             weight_lx=n[0], hidden_lx=n[1], embeddings=embeddings, direct=current_run_name, name=counter)
                                         writer.writerow({'Counter': counter, 
-                                                        'Test Acc': round(accs[0]*100,5), 'Valid Acc': round(accs[1]*100,5) , "Train Acc": round(accs[2]*100,5), 
-                                                        'Test Recall': round(recs[0],5), 'Valid Recall': round(recs[1],5) , "Train Recall": round(recs[2],5), 
-                                                        'Test Precision': round(precs[0],5), 'Valid Precision': round(precs[1],5) , "Train Precision": round(precs[2],5), 
-                                                        'Test F1': round(f1s[0]*100,5), 'Valid F1': round(f1s[1],5) , "Train F1": round(f1s[2]*100,5), 
+                                                        'Train Acc': round(accs[0],5), 'Dev Acc': round(accs[1],5) , "Test Acc": round(accs[2],5), 
+                                                        'Train Recall': round(recs[0],5), 'Dev Recall': round(recs[1],5) , "Test Recall": round(recs[2],5), 
+                                                        'Train Precision': round(precs[0],5), 'Dev Precision': round(precs[1],5) , "Test Precision": round(precs[2],5), 
+                                                        'Train F1': round(f1s[0],5), 'Dev F1': round(f1s[1],5) , "Test F1": round(f1s[2],5), 
                                                         "MinImprov": i, "Method": h, "LernR": j,
                                                         "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
                                                         "Hidden": "({0}, {1})".format(l,m), 'ReportTrain': reportTrain, 'ReportDev': reportDev, 'ReportTest': reportTest})
@@ -122,13 +129,17 @@ def grid(trainpath, devpath, testpath, args):
                                         csvfile.flush()
     csvfile.close()
 
+####################################
+# single hyperparameter search
+####################################
+
 def single(trainpath, devpath, testpath, args):
     ''' train the neural network with a given parameter setting'''
     current_time = getCurrentTime()
     current_run_name = "%s_%s" % (current_time, args.name)
     os.makedirs("pickles/"+current_run_name)
     csvfile = open('pickles/'+ current_run_name + '/' + 'Results.csv', 'w')
-    fieldnames = ['Test Acc', 'Valid Acc', 'Train Acc', "Test Recall","Valid Recall", "Train Recall","Test Precision", "Valid Precision","Train Precision" , "Test F1", "Valid F1","Train F1", "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", 'ReportTrain','ReportDev','ReportTest']
+    fieldnames = ['Train Acc', 'Dev Acc', 'Test Acc', "Train Recall","Dev Recall", "Test Recall","Train Precision", "Dev Precision","Test Precision" , "Train F1", "Dev F1","Test F1", "MinImprov", "Method", "LernR", "Momentum", "Decay", "Regular.", "Hidden", 'ReportTrain','ReportDev','ReportTest']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.flush()
@@ -140,18 +151,22 @@ def single(trainpath, devpath, testpath, args):
                                           "%sparses.json" % testpath, "%srelations.json" % trainpath,
                                           "%srelations.json" % devpath, "%srelations.json" % testpath,
                                           args.emb, current_run_name, args.name)
-    # train neural network
-    method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'nag', 0.0001, 0.6, 0.0001, 0.0001, (60, 'lgrelu'), 0.001, 5, 5, "l1", "l2"
+    # train neural network    
+    method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'nag', 0.0001, 0.95, 0.0001, 0.0001, (80, 'rect:max'), 0.001, 5, 5, "l1", "l1"
     accs, reportTrain, reportDev, reportTest, recs, precs, f1s = train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name)
-    writer.writerow({'Test Acc': round(accs[0]*100,5), 'Valid Acc': round(accs[1]*100,5) , "Train Acc": round(accs[2]*100,5), 
-                                                        'Test Recall': round(recs[0],5), 'Valid Recall': round(recs[1],5) , "Train Recall": round(recs[2],5), 
-                                                        'Test Precision': round(precs[0],5), 'Valid Precision': round(precs[1],5) , "Train Precision": round(precs[2],5), 
-                                                        'Test F1': round(f1s[0]*100,5), 'Valid F1': round(f1s[1],5) , "Train F1": round(f1s[2]*100,5), 
+    writer.writerow({'Train Acc': round(accs[0],5), 'Dev Acc': round(accs[1],5) , "Test Acc": round(accs[2],5), 
+                                                        'Train Recall': round(recs[0],5), 'Dev Recall': round(recs[1],5) , "Test Recall": round(recs[2],5), 
+                                                        'Train Precision': round(precs[0],5), 'Dev Precision': round(precs[1],5) , "Test Precision": round(precs[2],5), 
+                                                        'Train F1': round(f1s[0],5), 'Dev F1': round(f1s[1],5) , "Test F1": round(f1s[2],5), 
                                                      "MinImprov": min_improvement, "Method": method, "LernR": learning_rate,
                                                      "Momentum":momentum, "Decay":"{0}={1}".format(weight_lx, decay), "Regular.": "{0}={1}".format(hidden_lx, regularization),
                                                      "Hidden": "({0}, {1})".format(hidden[0],hidden[1]), 'ReportTrain': reportTrain, 'ReportDev': reportDev, 'ReportTest': reportTest})
     csvfile.flush()
     csvfile.close()
+
+####################################
+# aux functions/debugging
+####################################
 
 def restart():
     """saves the time reconverting the relations each and every time."""
@@ -161,6 +176,13 @@ def restart():
             loaded = pickle.load(f)
             pseudo_tuple.append(loaded)
     return tuple(pseudo_tuple)
+
+def getCurrentTime():
+    return datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+
+def create_training_parameters(parameter_lists):
+    """function that creates all possible parameter combinations"""
+    pass
 
 def import_pickle(path):
     f = open(path, "rb")
@@ -179,8 +201,9 @@ def import_pickle(path):
     (input_dev, output_dev) = convert_relations(relations_dev, label_subst, m)
     return input_train, output_train, input_dev, output_dev, label_subst
 
-def getCurrentTime():
-    return datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+####################################
+# main call
+####################################
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -194,7 +217,7 @@ if __name__ == "__main__":
                         help="Path to pretrained embeddings")
     parser.add_argument("--mode", type=str, default="single",
                         help="what to test")
-    parser.add_argument("--name", type=str, default = "m_0")
+    parser.add_argument("--name", type=str, default = "m_1")
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
     if args.debug:

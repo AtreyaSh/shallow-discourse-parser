@@ -6,6 +6,10 @@ from sklearn.metrics import classification_report
 import pickle
 from .metrics import Metrics
 
+####################################
+# theanets baseline training
+####################################
+
 def train_theanet(method, learning_rate, momentum, decay, regularization, hidden,
                   min_improvement, validate_every, patience, weight_lx, hidden_lx,
                   embeddings, direct, name = 0):

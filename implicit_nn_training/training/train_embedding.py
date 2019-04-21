@@ -16,6 +16,7 @@ from nltk.corpus import stopwords
 
 ####################################
 # train word embeddings
+# m_0 to m_11 possible models
 ####################################
 
 def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepath, relations_train_filepath,
@@ -107,72 +108,10 @@ def start_vectors(parses_train_filepath, parses_dev_filepath, parses_test_filepa
          (input_dev,output_dev), (input_test,output_test))
     return input_train, output_train, input_dev, output_dev, input_test, output_test ,label_subst
 
-def readDump():
-    f = open("pickles/relations_train.pickle", "rb")
-    relations_train = pickle.load(f)
-    f.close()
-    f = open("pickles/relations_dev.pickle", "rb")
-    relations_dev = pickle.load(f)
-    f.close()
-    f = open("pickles/relations_test.pickle", "rb")
-    relations_test = pickle.load(f)
-    f.close()
-    f = open("pickles/all_relations_train.pickle", "rb")
-    all_relations_train = pickle.load(f)
-    f.close()
-    f = open("pickles/all_relations_dev.pickle", "rb")
-    all_relations_dev = pickle.load(f)
-    f.close()
-    f = open("pickles/parses.pickle", "rb")
-    parses = pickle.load(f)
-    f.close()
-    return relations_train, relations_dev, relations_test, all_relations_train, all_relations_dev, parses
-
-def dump(direct, name, m, label_subst, relations_train, relations_dev, relations_test,
-         all_relations_train, all_relations_dev, parses, inoutTr, inoutDe, inoutTe):
-    if not os.path.exists("pickles"):
-        os.makedirs("pickles")
-    file = open("pickles/"+str(direct)+"/"+str(name)+".pickle", "wb")
-    pickle.dump(m, file, protocol=pickle.HIGHEST_PROTOCOL)
-    file.close()
-    file = open("pickles/"+str(direct)+"/inoutTrain.pickle", "wb")
-    pickle.dump(inoutTr, file, protocol=pickle.HIGHEST_PROTOCOL)
-    file.close()
-    file = open("pickles/"+str(direct)+"/inoutDev.pickle", "wb")
-    pickle.dump(inoutDe, file, protocol=pickle.HIGHEST_PROTOCOL)
-    file.close()
-    file = open("pickles/"+str(direct)+"/inoutTest.pickle", "wb")
-    pickle.dump(inoutTe, file, protocol=pickle.HIGHEST_PROTOCOL)
-    file.close()
-    if not os.path.exists("pickles/"+str(direct)+"/label_subst.pickle"):
-        file_ls = open("pickles/"+str(direct)+"/label_subst.pickle", "wb")
-        pickle.dump(label_subst, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/relations_train.pickle"):
-        file_ls = open("pickles/relations_train.pickle", "wb")
-        pickle.dump(relations_train, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/relations_dev.pickle"):
-        file_ls = open("pickles/relations_dev.pickle", "wb")
-        pickle.dump(relations_dev, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/relations_test.pickle"):
-        file_ls = open("pickles/relations_test.pickle", "wb")
-        pickle.dump(relations_test, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/all_relations_train.pickle"):
-        file_ls = open("pickles/all_relations_train.pickle", "wb")
-        pickle.dump(all_relations_train, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/all_relations_dev.pickle"):
-        file_ls = open("pickles/all_relations_dev.pickle", "wb")
-        pickle.dump(all_relations_dev, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    if not os.path.exists("pickles/parses.pickle"):
-        file_ls = open("pickles/parses.pickle", "wb")
-        pickle.dump(parses, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
-        file_ls.close()
-    return None
+####################################
+# aggregate word embeddings
+# output argument embeddings
+####################################
 
 def convert_relations(relations, label_subst, m):
     inputs = []
@@ -573,7 +512,7 @@ def convert_relations_modified_m_7(relations, label_subst, m):
     return (inputs, outputs)
 
 ####################################
-# read/combine PDTB data (syntactic)
+# PDTB/syntactic functions
 ####################################
 
 def read_file(filename, parses, context_size = 1):
@@ -689,3 +628,74 @@ def get_context(rel, doc, context_size=1):
         except IndexError:
             pass
     return (pretext, posttext)
+
+####################################
+# read/dump pickles
+####################################
+
+def readDump():
+    f = open("pickles/relations_train.pickle", "rb")
+    relations_train = pickle.load(f)
+    f.close()
+    f = open("pickles/relations_dev.pickle", "rb")
+    relations_dev = pickle.load(f)
+    f.close()
+    f = open("pickles/relations_test.pickle", "rb")
+    relations_test = pickle.load(f)
+    f.close()
+    f = open("pickles/all_relations_train.pickle", "rb")
+    all_relations_train = pickle.load(f)
+    f.close()
+    f = open("pickles/all_relations_dev.pickle", "rb")
+    all_relations_dev = pickle.load(f)
+    f.close()
+    f = open("pickles/parses.pickle", "rb")
+    parses = pickle.load(f)
+    f.close()
+    return relations_train, relations_dev, relations_test, all_relations_train, all_relations_dev, parses
+
+def dump(direct, name, m, label_subst, relations_train, relations_dev, relations_test,
+         all_relations_train, all_relations_dev, parses, inoutTr, inoutDe, inoutTe):
+    if not os.path.exists("pickles"):
+        os.makedirs("pickles")
+    file = open("pickles/"+str(direct)+"/"+str(name)+".pickle", "wb")
+    pickle.dump(m, file, protocol=pickle.HIGHEST_PROTOCOL)
+    file.close()
+    file = open("pickles/"+str(direct)+"/inoutTrain.pickle", "wb")
+    pickle.dump(inoutTr, file, protocol=pickle.HIGHEST_PROTOCOL)
+    file.close()
+    file = open("pickles/"+str(direct)+"/inoutDev.pickle", "wb")
+    pickle.dump(inoutDe, file, protocol=pickle.HIGHEST_PROTOCOL)
+    file.close()
+    file = open("pickles/"+str(direct)+"/inoutTest.pickle", "wb")
+    pickle.dump(inoutTe, file, protocol=pickle.HIGHEST_PROTOCOL)
+    file.close()
+    if not os.path.exists("pickles/"+str(direct)+"/label_subst.pickle"):
+        file_ls = open("pickles/"+str(direct)+"/label_subst.pickle", "wb")
+        pickle.dump(label_subst, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+    if not os.path.exists("pickles/relations_train.pickle"):
+        file_ls = open("pickles/relations_train.pickle", "wb")
+        pickle.dump(relations_train, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+    if not os.path.exists("pickles/relations_dev.pickle"):
+        file_ls = open("pickles/relations_dev.pickle", "wb")
+        pickle.dump(relations_dev, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+    if not os.path.exists("pickles/relations_test.pickle"):
+        file_ls = open("pickles/relations_test.pickle", "wb")
+        pickle.dump(relations_test, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+    if not os.path.exists("pickles/all_relations_train.pickle"):
+        file_ls = open("pickles/all_relations_train.pickle", "wb")
+        pickle.dump(all_relations_train, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+    if not os.path.exists("pickles/all_relations_dev.pickle"):
+        file_ls = open("pickles/all_relations_dev.pickle", "wb")
+        pickle.dump(all_relations_dev, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+    if not os.path.exists("pickles/parses.pickle"):
+        file_ls = open("pickles/parses.pickle", "wb")
+        pickle.dump(parses, file_ls, protocol=pickle.HIGHEST_PROTOCOL)
+        file_ls.close()
+    return None
