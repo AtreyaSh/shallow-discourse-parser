@@ -117,7 +117,7 @@ The best dev/test F1-scores per word-embedding model have been tabulated below.
 
 ### Observations
 
-1. The models highlighted in bold exceeded the baseline model M<sub>0</sub> in the dev and/or test dataset. We can observe that the better performing models both incorporated negative sampling into their workflow, while the baseline model did not. We can therefore conclude the importance of negative sampling in word embedding refinement.
+1. The models M<sub>1</sub> and M<sub>11</sub>, highlighted in bold, exceeded the baseline model M<sub>0</sub> in the dev and/or test dataset. We can observe that the better performing models both incorporated negative sampling into their workflow, while the baseline model did not. We can therefore conclude the importance of negative sampling in word embedding refinement.
 
 2. We can also observe that M<sub>3</sub> performed significantly poorly compared to other models. M<sub>3</sub> excluded stop words from argument vector aggregation. We can conclude that stop-words are of importance in aggregating word vectors to argument vectors.
 
