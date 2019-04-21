@@ -10,7 +10,7 @@ This project is a fork of the official Frankfurt Shallow Discourse Parser and in
 
 ## Usage
 
-To set up the pre-commit hook that will keep python dependencies up-to-date and automatically download pre-trained google word vectors, please run the following:
+To automatically download pre-trained google word vectors and set up the pre-commit hook that will keep python dependencies up-to-date, please run the following:
 
 ```shell
 $ ./init.sh
@@ -20,7 +20,7 @@ For an overview of our functions/models/results, please refer to the [readme](sr
 
 ## Data Requirements
 
-Please copy the following data into the data/ directory:
+Please copy the following data into the `src/data/` directory:
 
 * Penn Discourse TreeBank (PDTB) 2.0, a 1-million-word Wall Street Journal corpus; there are train, dev, test and blind directories (named en.train/, en.dev/, en.test, and en.blind-test/ respectively). They have to include the parses and relations files (normally called parses.json/relations.json) (http://www.cs.brandeis.edu/~clp/conll16st/rules.html). Simply, place these four folders into the data/ directory.
 
