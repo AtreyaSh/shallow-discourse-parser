@@ -17,7 +17,7 @@ import pandas as pd
 # combination hyperparameter search
 ####################################
 
-def combination(trainpath, devpath, testpath, vecpath, network1, network2, iterations = 20):
+def combination(trainpath, devpath, testpath, vecpath, network1, network2, iterations, training):
     current_time = getCurrentTime()
     current_run_name = "%s_%s" % (current_time, "comparison")
     os.makedirs("pickles/"+current_run_name)
@@ -134,17 +134,17 @@ def import_pickle(path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--train", type=str, default="data/en.train/",
-                        help="Path to train data folder, defaults to data/en.train/")
+                        help="Path to train data folder, defaults to 'data/en.train/'")
     parser.add_argument("--dev", type=str, default="data/en.dev/",
-                        help="Path to development data folder, defaults to data/en.dev/")
+                        help="Path to development data folder, defaults to 'data/en.dev/'")
     parser.add_argument("--test", type=str, default="data/en.test/",
-                        help="Path to test data folder, defaults to data/en.test/")
+                        help="Path to test data folder, defaults to 'data/en.test/'")
     parser.add_argument("--emb", type=str, default="data/GoogleNews-vectors-negative300.bin",
-                        help="Path to pretrained google embeddings, defaults to data/GoogleNews-vectors-negative300.bin")
+                        help="Path to pretrained google embeddings, defaults to 'data/GoogleNews-vectors-negative300.bin'")
     parser.add_argument("--iterations", type=int, default=20,
                         help="number of iterations for each network, defaults to 20")
     parser.add_argument("--training", type=str, default="theanets",
-                        help="Which NN training framework to use (theanets/keras)")
+                        help="Which NN training framework to use (theanets/keras), defaults to 'theanets'")
     requiredNamed = parser.add_argument_group('required named arguments')
     requiredNamed.add_argument('-n1', '--network1', help='path to network 1', required=True)
     requiredNamed.add_argument('-n2', '--network2', help='path to network 2', required=True)

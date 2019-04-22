@@ -179,21 +179,21 @@ def import_pickle(path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--train", type=str, default="data/en.train/",
-                        help="Path to train data folder, defaults to data/en.train/")
+                        help="Path to train data folder, defaults to 'data/en.train/'")
     parser.add_argument("--dev", type=str, default="data/en.dev/",
-                        help="Path to development data folder, defaults to data/en.dev/")
+                        help="Path to development data folder, defaults to 'data/en.dev/'")
     parser.add_argument("--test", type=str, default="data/en.test/",
-                        help="Path to test data folder, defaults to data/en.test/")
+                        help="Path to test data folder, defaults to 'data/en.test/'")
     parser.add_argument("--emb", type=str, default="data/GoogleNews-vectors-negative300.bin",
-                        help="Path to pretrained google embeddings, defaults to data/GoogleNews-vectors-negative300.bin")
+                        help="Path to pretrained google embeddings, defaults to 'data/GoogleNews-vectors-negative300.bin'")
     parser.add_argument("--mode", type=str, default="single",
                         help="Type of NN hyperparameter search, possibilities are 'single', 'grid', defaults to 'single'")
     parser.add_argument("--name", type=str, default = "m_1",
                         help="Word-embedding model to be used such as 'm_0', 'm_1', 'm_2' ... 'm_11', defaults to 'm_1'")
+    parser.add_argument("--training", type=str, default="theanets",
+                        help="Which NN training framework to use (theanets/keras), defaults to 'theanets'")
     parser.add_argument("--debug", action="store_true",
                         help="Enter debugging mode")
-    parser.add_argument("--training", type=str, default="theanets",
-                        help="Which NN training framework to use (theanets/keras)")
     args = parser.parse_args()
     if args.debug:
         print("WARNING DEBUG MODE")

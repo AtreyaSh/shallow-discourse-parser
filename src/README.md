@@ -56,20 +56,23 @@ For running models, we created a file with dedicated functions in `train.py`. Th
 
 ```
 usage: train.py [-h] [--train TRAIN] [--dev DEV] [--test TEST] [--emb EMB]
-                [--mode MODE] [--name NAME] [--debug]
+                [--mode MODE] [--name NAME] [--training TRAINING] [--debug]
 
 optional arguments:
-  -h, --help     show this help message and exit
-  --train TRAIN  Path to train data folder, defaults to data/en.train/
-  --dev DEV      Path to development data folder, defaults to data/en.dev/
-  --test TEST    Path to test data folder, defaults to data/en.test/
-  --emb EMB      Path to pretrained google embeddings, defaults to
-                 data/GoogleNews-vectors-negative300.bin
-  --mode MODE    Type of NN hyperparameter search, possibilities are 'single',
-                 'grid', defaults to 'single'
-  --name NAME    Word-embedding model to be used such as 'm_0', 'm_1', 'm_2'
-                 ... 'm_11', defaults to 'm_1'
-  --debug        Enter debugging mode
+  -h, --help           show this help message and exit
+  --train TRAIN        Path to train data folder, defaults to 'data/en.train/'
+  --dev DEV            Path to development data folder, defaults to
+                       'data/en.dev/'
+  --test TEST          Path to test data folder, defaults to 'data/en.test/'
+  --emb EMB            Path to pretrained google embeddings, defaults to
+                       'data/GoogleNews-vectors-negative300.bin'
+  --mode MODE          Type of NN hyperparameter search, possibilities are
+                       'single', 'grid', defaults to 'single'
+  --name NAME          Word-embedding model to be used such as 'm_0', 'm_1',
+                       'm_2' ... 'm_11', defaults to 'm_1'
+  --training TRAINING  Which NN training framework to use (theanets/keras),
+                       defaults to 'theanets'
+  --debug              Enter debugging mode
 ```
 
 We implemented 2 modes of searching for neural network hyperparameters given a word-embedding model.
@@ -78,7 +81,9 @@ We implemented 2 modes of searching for neural network hyperparameters given a w
 
 2. The "grid" mode defines a set of possible values for hyperparameters and essentially conducts a grid-wise search to find the best combination. A total of 72 models will be tested using this mode.
 
-Note: An example of running this file:
+Note:
+* The user can define whether to use the theanets (legacy) or keras network (developed by us). This parameter can be passed to the`--training` argument.
+* An example of running this file:
 
 ```shell
 $ python3 train.py --mode grid --name m_11
@@ -89,13 +94,23 @@ $ python3 train.py --mode grid --name m_11
 After running `train.py`, one can compare different models to find which ones had the best performance. In order to compare two different models (eg. a modified model vs. baseline model), one can use `compare_combination.py`. This dedicated scripts runs the baseline and a possible optimal model repeatedly and logs their accuracies. These accuracies can then be used to detect statistically significant changes.
 
 ```
-usage: compare_combination.py [-h] [--iterations ITERATIONS] -n1 NETWORK1 -n2
-                              NETWORK2
+usage: compare_combination.py [-h] [--train TRAIN] [--dev DEV] [--test TEST]
+                              [--emb EMB] [--iterations ITERATIONS]
+                              [--training TRAINING] -n1 NETWORK1 -n2 NETWORK2
 
 optional arguments:
   -h, --help            show this help message and exit
+  --train TRAIN         Path to train data folder, defaults to
+                        'data/en.train/'
+  --dev DEV             Path to development data folder, defaults to
+                        'data/en.dev/'
+  --test TEST           Path to test data folder, defaults to 'data/en.test/'
+  --emb EMB             Path to pretrained google embeddings, defaults to
+                        'data/GoogleNews-vectors-negative300.bin'
   --iterations ITERATIONS
                         number of iterations for each network, defaults to 20
+  --training TRAINING   Which NN training framework to use (theanets/keras),
+                        defaults to 'theanets'
 
 required named arguments:
   -n1 NETWORK1, --network1 NETWORK1
@@ -104,7 +119,9 @@ required named arguments:
                         path to network 2
 ```
 
-Note: Here is an example run of this script:
+Note:
+* The user can define whether to use the theanets (legacy) or keras network (developed by us). This parameter can be passed to the`--training` argument.
+* An example of running this file:
 
 ```shell
 $ python3 compare_combination.py -n1 ./pickles/2019_04_11_21_02_39_m_0/neuralnetwork_37.pickle \
