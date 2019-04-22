@@ -22,7 +22,7 @@ For an overview of our functions/models/results, please refer to the [readme](sr
 
 Please copy the following data into the `src/data/` directory:
 
-* Penn Discourse TreeBank (PDTB) 2.0, a 1-million-word Wall Street Journal corpus; there are train, dev, test and blind directories (named en.train/, en.dev/, en.test, and en.blind-test/ respectively). They have to include the parses and relations files (normally called parses.json/relations.json) (http://www.cs.brandeis.edu/~clp/conll16st/rules.html). Simply, place these four folders into the data/ directory.
+* Penn Discourse TreeBank (PDTB) 2.0, a 1-million-word Wall Street Journal corpus; there are train, dev, test and blind directories (named en.train/, en.dev/, en.test, and en.blind-test/ respectively). They have to include the parses and relations files (normally called parses.json/relations.json) (http://www.cs.brandeis.edu/~clp/conll16st/rules.html). Simply, place these four folders into the `src/data/` directory.
 
 * GoogleNews-vectors-negative300 (https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM/edit?pref=2&pli=1). This can either be manually downloaded through this link or automatically downloaded by running `init.sh` as described above (useful for server-based applications).
 
