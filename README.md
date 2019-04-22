@@ -51,4 +51,4 @@ Niko Schenk, Christian Chiarcos, Samuel Rönnqvist, Kathrin Donandt, Evgeny A. S
 
 Atreya Shankar, Luis Glaser
 
-Cognitive Systems 2018, University of Potsdam
+Cognitive Systems 2019, University of Potsdam
