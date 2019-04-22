@@ -113,9 +113,9 @@ $ python3 compare_combination.py -n1 ./pickles/2019_04_11_21_02_39_m_0/neuralnet
 
 ### Model/Results Logging
 
-All executed models will be logged as pickles in the `/pickles/` directory with the given date/time and model number for easy identification. A csv file with results of each model will also be produced for post-run analysis. Other files such as the input/output aggregated embeddings and word embedding model will also be written to pickle files for easy re-testing at a later time.
+All executed models will be logged as pickles in the `./pickles` directory with the given date/time and model number for easy identification. A csv file with results of each model will also be produced for post-run analysis. Other files such as the input/output aggregated embeddings and word embedding model will also be written to pickle files for easy re-testing at a later time.
 
-Our best model has been saved in the `/pickles/*_best` directory. These include the input and output argument embeddings with the prefix `inout*`, the best word embedding model with the prefix `m*` and the best neural-network with the prefix `neuralnetwork*`. We also include the label substitution dictionary, which essentially translates PDTB discourse senses into unique integer classes, and the corresponding run-log in `Results.csv`.
+Our best model has been saved in the `./pickles/*_best` directory. These include the input and output argument embeddings with the prefix `inout*`, the best word embedding model with the prefix `m*` and the best neural-network with the prefix `neuralnetwork*`. We also include the label substitution dictionary, which essentially translates PDTB discourse senses into unique integer classes, and the corresponding run-log in `Results.csv`.
 
 ## Results
 
