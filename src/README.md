@@ -128,7 +128,7 @@ The best dev/test F1-scores per word-embedding model have been tabulated below.
 | Model | negative | sg | hs | final dimension | aggregation | context | stop | best dev-F1 | best test-F1 |
 |:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|
 | M<sub>0</sub> | 0 | 1 | 1 | 600 | 0 | 0 | 0 | *0.4319465* | *0.3593190* |
-| **M<sub>1</sub>** | 10 | 1 | 0 | 600 | 0 | 0 | 0 | **0.4395718** | **0.3639238** |
+| **M<sub>1</sub>** | 10 | 1 | 0 | 600 | 0 | 0 | 0 | **0.4395718** | **0.3639238**\*\*\* |
 | M<sub>2</sub> | 0 | 1 | 1 | 600 | 1 | 0 | 0 | 0.4256447 | 0.3543410 |
 | M<sub>3</sub> | 0 | 1 | 1 | 600 | 0 | 0 | 1 | 0.4128714 | 0.3309730 |
 | M<sub>4</sub> | 0 | 1 | 1 | 1200 | 1 | 0 | 0 | 0.4291707 | 0.3501314 |
@@ -140,14 +140,14 @@ The best dev/test F1-scores per word-embedding model have been tabulated below.
 | M<sub>10</sub> | 0 | 1 | 1 | 600 | 1 | 1 | 0 | 0.4321273 | 0.3514591 |
 | **M<sub>11</sub>** | 20 | 1 | 0 | 600 | 0 | 0 | 0 | **0.4396398** | 0.3590001 |
 
+Note: \*\*\*\{t-test; p < 0.001\}
+
 ### Observations
 
 1. The models M<sub>1</sub> and M<sub>11</sub>, highlighted in bold, exceeded the baseline model M<sub>0</sub> in the dev and/or test dataset. We can observe that the better performing models both incorporated negative sampling into their workflow, while the baseline model did not. We can therefore conclude the importance of negative sampling in word embedding refinement.
 
-2. We can also observe that M<sub>3</sub> performed significantly poorly compared to other models. M<sub>3</sub> excluded stop words from argument vector aggregation. We can conclude that stop-words are of importance in aggregating word vectors to argument vectors.
+2. We repeated the runs to compute 40 overall test F1-scores for models M<sub>0</sub> and M<sub>1</sub> using `compare_combination.py`. Based on the variations of test F1-scores, we concluded, using the Welch's t-test, that the mean test F1-score of M<sub>1</sub> is significantly larger than the mean test F1-score of M<sub>0</sub>.
 
-3. We can also observe that models M<sub>6</sub> and  M<sub>7</sub> perform very poorly. These models were designed to be hybrid models which incorporated numerous components from other models. We can conclude that the combination of various individiually well-performing parameters, such as aggregation and context-dependence, does not necessarily lead to an overall improvement in performance. In the cases of M<sub>6</sub> and  M<sub>7</sub>, such hybrid combinations actually led to a drop in performance. This stresses the importance of doing grid-based (step-by-step) searches of word-embedding parameters instead of combined parameter changes.
+3. We can observe that M<sub>3</sub> performed significantly poorly compared to other models. M<sub>3</sub> excluded stop words from argument vector aggregation. We can conclude that stop-words are of importance in aggregating word vectors to argument vectors.
 
-## Further Work
-
-With the accuracies obtained above, we would like to repeat the tests above to obtain additional samples of accuracies. This would help us get an idea of the general variance of accuracies given an optimal model. This would help us in ultimately deciding whether the improvement of accuracy in model M<sub>1</sub> is statistically significant.
+4. We can observe that models M<sub>6</sub> and M<sub>7</sub> perform very poorly. These models were designed to be hybrid models which incorporated numerous components from other models. We can conclude that the combination of various individiually well-performing parameters, such as aggregation and context-dependence, does not necessarily lead to an overall improvement in performance. In the cases of M<sub>6</sub> and  M<sub>7</sub>, such hybrid combinations actually led to a drop in performance. This stresses the importance of doing grid-based (step-by-step) searches of word-embedding parameters instead of combined parameter changes.
