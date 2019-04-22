@@ -3,7 +3,7 @@
 
 import training.train_embedding as trainW
 from training.train_embedding import convert_relations
-from training.train_NN import train_theanet
+from training.train_NN import train_theanet, train_keras
 import sys
 import csv
 import os
@@ -38,7 +38,10 @@ def grid(trainpath, devpath, testpath, args):
     w_h = [('l2', 'l1'), ('l1', 'l2'), ('l2','l2'), ("l1", "l1")]
     momentum_alts = [0.4, 0.6, 0.95]
     hidden_alts = [60, 80, 100]
-    act_funcs = ['rect:max','lgrelu']
+    if args.training == "theanets":
+        act_funcs = ['prelu']
+    else:
+        act_funcs = ['rect:max','lgrelu']
     d_r = [(0.0001, 0.0001)]
     ## more parameter options, e.g.:
     #method = ['nag', 'sgd', 'rprop','rmsprop', 'adadelta', 'hf', 'sample','layerwise']
@@ -67,10 +70,18 @@ def grid(trainpath, devpath, testpath, args):
                         for m in act_funcs:
                             for n in w_h:
                                 for o in d_r:
+                                    if args.training == "theanets":
                                         accs, reportTrain, reportDev, reportTest, recs, precs, f1s = train_theanet(method=h, learning_rate=j, momentum=k, decay=o[0], regularization=o[1], 
                                                                                             hidden=(l, m), min_improvement=i, validate_every=5, patience=5,
                                                                                             weight_lx=n[0], hidden_lx=n[1], embeddings=embeddings, direct=current_run_name, name=counter)
-                                        writer.writerow({'Counter': counter, 
+                                    elif args.training == "keras":
+                                        accs, reportTrain, reportDev, reportTest, recs, precs, f1s = train_keras(method=h, learning_rate=j, momentum=k, decay=o[0], regularization=o[1], 
+                                                                                            hidden=(l, m), min_improvement=i, validate_every=5, patience=5,
+                                                                                            weight_lx=n[0], hidden_lx=n[1], embeddings=embeddings, direct=current_run_name, name=counter)
+                                    else:
+                                        print("Unknown training framework %s." % args.training)
+        
+                                    writer.writerow({'Counter': counter, 
                                                         'Train Acc': round(accs[0],5), 'Dev Acc': round(accs[1],5) , "Test Acc": round(accs[2],5), 
                                                         'Train Recall': round(recs[0],5), 'Dev Recall': round(recs[1],5) , "Test Recall": round(recs[2],5), 
                                                         'Train Precision': round(precs[0],5), 'Dev Precision': round(precs[1],5) , "Test Precision": round(precs[2],5), 
@@ -78,8 +89,8 @@ def grid(trainpath, devpath, testpath, args):
                                                         "MinImprov": i, "Method": h, "LernR": j,
                                                         "Momentum":k, "Decay":"{0}={1}".format(n[0], o[0]), "Regular.": "{0}={1}".format(n[1], o[1]),
                                                         "Hidden": "({0}, {1})".format(l,m), 'ReportTrain': str(reportTrain), 'ReportDev': str(reportDev), 'ReportTest': str(reportTest)})
-                                        counter += 1
-                                        csvfile.flush()
+                                    counter += 1
+                                    csvfile.flush()
     csvfile.close()
     return 0
 
@@ -107,7 +118,12 @@ def single(trainpath, devpath, testpath, args):
                                           args.emb, current_run_name, args.name)
     # train neural network 
     method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx = 'nag', 0.0001, 0.95, 0.0001, 0.0001, (80, 'rect:max'), 0.001, 5, 5, "l1", "l1"
-    accs, reportTrain, reportDev, reportTest, recs, precs, f1s = train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name)
+    if args.training == "theanets":
+        accs, reportTrain, reportDev, reportTest, recs, precs, f1s = train_theanet(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name)
+    elif args.training == "keras":
+        accs, reportTrain, reportDev, reportTest, recs, precs, f1s = train_keras(method, learning_rate, momentum, decay, regularization, hidden, min_improvement, validate_every, patience, weight_lx, hidden_lx, embeddings, current_run_name)
+    else:
+        print("Unknown training framework %s." % args.training)
     writer.writerow({'Train Acc': round(accs[0],5), 'Dev Acc': round(accs[1],5) , "Test Acc": round(accs[2],5), 
                                                         'Train Recall': round(recs[0],5), 'Dev Recall': round(recs[1],5) , "Test Recall": round(recs[2],5), 
                                                         'Train Precision': round(precs[0],5), 'Dev Precision': round(precs[1],5) , "Test Precision": round(precs[2],5), 
@@ -176,6 +192,8 @@ if __name__ == "__main__":
                         help="Word-embedding model to be used such as 'm_0', 'm_1', 'm_2' ... 'm_11', defaults to 'm_1'")
     parser.add_argument("--debug", action="store_true",
                         help="Enter debugging mode")
+    parser.add_argument("--training", type=str, default="theanets",
+                        help="Which NN training framework to use (theanets/keras)")
     args = parser.parse_args()
     if args.debug:
         print("WARNING DEBUG MODE")

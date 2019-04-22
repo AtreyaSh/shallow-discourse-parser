@@ -54,7 +54,8 @@ def combination(trainpath, devpath, testpath, vecpath, network1, network2, itera
                                               "%sparses.json" % testpath, "%srelations.json" % trainpath,
                                               "%srelations.json" % devpath, "%srelations.json" % testpath,
                                               vecpath, current_run_name, "m_"+countW)
-            accs, reportTrain, reportDev, reportTest, recs, precs, f1s = train_theanet(method, float(learning_rate), 
+            if training == "theanets":
+                accs, reportTrain, reportDev, reportTest, recs, precs, f1s = train_theanet(method, float(learning_rate), 
                                                                                        float(momentum), float(decay), 
                                                                                        float(regularization), hidden, 
                                                                                        float(min_improvement),
@@ -63,6 +64,19 @@ def combination(trainpath, devpath, testpath, vecpath, network1, network2, itera
                                                                                        hidden_lx, embeddings, 
                                                                                        direct=current_run_name, 
                                                                                        name=counterName)
+            elif training == "keras":
+                accs, reportTrain, reportDev, reportTest, recs, precs, f1s = train_keras(method, float(learning_rate), 
+                                                                                       float(momentum), float(decay), 
+                                                                                       float(regularization), hidden, 
+                                                                                       float(min_improvement),
+                                                                                       validate_every,
+                                                                                       patience, weight_lx, 
+                                                                                       hidden_lx, embeddings, 
+                                                                                       direct=current_run_name, 
+                                                                                       name=counterName)
+            else:
+                print("Unknown training framework %s." % args.training)
+                  
             writer.writerow({'Counter':str(counter),'Word-Model':"m_"+countW,'Neural-Model':countN,
                             'Train Acc': round(accs[0],5), 'Dev Acc': round(accs[1],5) , "Test Acc": round(accs[2],5), 
                             'Train Recall': round(recs[0],5), 'Dev Recall': round(recs[1],5) , "Test Recall": round(recs[2],5), 
@@ -129,9 +143,11 @@ if __name__ == "__main__":
                         help="Path to pretrained google embeddings, defaults to data/GoogleNews-vectors-negative300.bin")
     parser.add_argument("--iterations", type=int, default=20,
                         help="number of iterations for each network, defaults to 20")
+    parser.add_argument("--training", type=str, default="theanets",
+                        help="Which NN training framework to use (theanets/keras)")
     requiredNamed = parser.add_argument_group('required named arguments')
     requiredNamed.add_argument('-n1', '--network1', help='path to network 1', required=True)
     requiredNamed.add_argument('-n2', '--network2', help='path to network 2', required=True)
     args = parser.parse_args()
     # make combination run
-    combination(args.train, args.dev, args.test, args.emb, args.network1, args.network2, args.iterations)
+    combination(args.train, args.dev, args.test, args.emb, args.network1, args.network2, args.iterations, args.training)
