@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from readers.reader import read_file, convert_relations, read_file_Org, read_file_noSenses, convert_relations_noSenses
-from readers.readPDTB import subst_id_words
+from reader import read_file, convert_relations, read_file_Org, read_file_noSenses, convert_relations_noSenses
+from readPDTB import subst_id_words
 import json
 import pickle
 import sys
