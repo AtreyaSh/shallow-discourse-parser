@@ -1,1 +1,1 @@
-Please put here the GoogleNews-vectors-negative300.bin file
+GoogleNews-vectors-negative300.bin file herere
