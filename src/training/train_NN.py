@@ -183,6 +183,6 @@ def train_keras(method, learning_rate, momentum, decay, regularization, hidden,
                                 y_pred = np.argmax(model.predict(test[0]), axis=1),
                                 name = "test")
         del model # Reset
-    temp = metrics.get_averages_ordered_by(["test", "dev", "train"])
+    temp = metrics.get_averages_ordered_by(["train", "dev", "test"])
     accs, recs, precs, f1s = temp
     return accs, "N/A", "N/A", "N/A", recs, precs, f1s
