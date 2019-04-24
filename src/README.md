@@ -82,7 +82,7 @@ We implemented 2 modes of searching for neural network hyperparameters given a w
 2. The "grid" mode defines a set of possible values for hyperparameters and essentially conducts a grid-wise search to find the best combination. A total of 72 models will be tested using this mode.
 
 Note:
-* The user can define whether to use the theanets (legacy) or keras network (developed by us). This parameter can be passed to the`--training` argument.
+* The user can define whether to use the theanets (legacy) or keras network (developed by us). This parameter can be passed to the `--training` argument.
 * An example of running this file:
 
 ```shell
@@ -120,7 +120,7 @@ required named arguments:
 ```
 
 Note:
-* The user can define whether to use the theanets (legacy) or keras network (developed by us). This parameter can be passed to the`--training` argument.
+* The user can define whether to use the theanets (legacy) or keras network (developed by us). This parameter can be passed to the `--training` argument.
 * An example of running this file:
 
 ```shell
