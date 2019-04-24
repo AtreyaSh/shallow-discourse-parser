@@ -154,8 +154,6 @@ def train_keras(method, learning_rate, momentum, decay, regularization, hidden,
     metrics = Metrics()
     metrics.register_datasets(["train", "dev", "test"])
     for nexp in range(10):
-# def create_model(depth, hidden_nodes, activation_hidden, activation_output, output_shape,
-#                 input_shape, drop = True):
         w_reg = create_weight_regularizer(decay, weight_lx)
         b_reg = create_weight_regularizer(regularization, hidden_lx)
         model = create_model(depth=depth, hidden_nodes=hidden[0], activation_hidden=hidden[1], 
