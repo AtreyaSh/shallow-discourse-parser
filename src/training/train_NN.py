@@ -80,7 +80,6 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     file.close()
     return accs, reportTrain, reportDev, reportTest, recs, precs, f1s
 
-
 def create_activation(activation):
     if activation == "prelu":
         return PReLU()
@@ -130,7 +129,6 @@ def create_model(depth, hidden_nodes, activation_hidden, activation_output, outp
         model = Model(inputs = inlayer, outputs = output)
         return model
 
-    
 def create_optimizer(method, learning_rate, momentum, decay):
     """Creates the optimizing function based on training arguments"""
     if method == "nag":
@@ -155,7 +153,6 @@ def train_keras(method, learning_rate, momentum, decay, regularization, hidden,
     test = (input_test, np_utils.to_categorical(output_test, num_classes=num_classes))
     metrics = Metrics()
     metrics.register_datasets(["train", "dev", "test"])
-    
     for nexp in range(10):
 # def create_model(depth, hidden_nodes, activation_hidden, activation_output, output_shape,
 #                 input_shape, drop = True):
@@ -165,7 +162,6 @@ def train_keras(method, learning_rate, momentum, decay, regularization, hidden,
                             activation_output='softmax',output_shape=num_classes, input_shape=train[0].shape[1],
                             drop=drop, w_reg = w_reg, b_reg = b_reg)
         opt = create_optimizer(method, learning_rate, momentum, decay)
-        
         model.compile(loss='categorical_crossentropy', 
                     optimizer=opt, 
                     metrics=['accuracy'])
@@ -174,7 +170,6 @@ def train_keras(method, learning_rate, momentum, decay, regularization, hidden,
                         batch_size = 500,
                         validation_data = (dev[0], dev[1]),
                         verbose = 1)
-
         # Done training, now compute acc, prec etc which only makes sense after training.
         metrics.update_metrics(y_true = np.argmax(train[1], axis=1),
                                 y_pred = np.argmax(model.predict(train[0]), axis=1),
@@ -185,10 +180,7 @@ def train_keras(method, learning_rate, momentum, decay, regularization, hidden,
         metrics.update_metrics(y_true = np.argmax(test[1], axis=1),
                                 y_pred = np.argmax(model.predict(test[0]), axis=1),
                                 name = "test")
-        
         del model # Reset
-
     temp = metrics.get_averages_ordered_by(["test", "dev", "train"])
     accs, recs, precs, f1s = temp
     return accs, "N/A", "N/A", "N/A", recs, precs, f1s
-    
