@@ -80,6 +80,10 @@ def train_theanet(method, learning_rate, momentum, decay, regularization, hidden
     file.close()
     return accs, reportTrain, reportDev, reportTest, recs, precs, f1s
 
+####################################
+# keras modified training
+####################################
+
 def create_activation(activation):
     if activation == "prelu":
         return PReLU()
