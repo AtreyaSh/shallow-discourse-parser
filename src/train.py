@@ -80,7 +80,6 @@ def grid(trainpath, devpath, testpath, args):
                                                                                             weight_lx=n[0], hidden_lx=n[1], embeddings=embeddings, direct=current_run_name, name=counter)
                                     else:
                                         print("Unknown training framework %s." % args.training)
-        
                                     writer.writerow({'Counter': counter, 
                                                         'Train Acc': round(accs[0],5), 'Dev Acc': round(accs[1],5) , "Test Acc": round(accs[2],5), 
                                                         'Train Recall': round(recs[0],5), 'Dev Recall': round(recs[1],5) , "Test Recall": round(recs[2],5), 

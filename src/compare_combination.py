@@ -76,7 +76,6 @@ def combination(trainpath, devpath, testpath, vecpath, network1, network2, itera
                                                                                        name=counterName)
             else:
                 print("Unknown training framework %s." % args.training)
-                  
             writer.writerow({'Counter':str(counter),'Word-Model':"m_"+countW,'Neural-Model':countN,
                             'Train Acc': round(accs[0],5), 'Dev Acc': round(accs[1],5) , "Test Acc": round(accs[2],5), 
                             'Train Recall': round(recs[0],5), 'Dev Recall': round(recs[1],5) , "Test Recall": round(recs[2],5), 
