@@ -10,7 +10,6 @@ from keras.layers import Dense, Dropout, Input
 from keras.layers.advanced_activations import PReLU
 from keras.layers import Activation
 from keras.regularizers import l2, l1 # for keras 2
-from keras.utils import np_utils
 import numpy as np
 from keras import optimizers
 from .metrics import Metrics
