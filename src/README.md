@@ -157,7 +157,7 @@ The best dev/test F1-scores per word-embedding model have been tabulated below.
 | M<sub>10</sub> | 0 | 1 | 1 | 600 | 1 | 1 | 0 | 0.4321273 | 0.3514591 |
 | M<sub>11</sub> | 20 | 1 | 0 | 600 | 0 | 0 | 0 | 0.4396398 | 0.3590001 |
 
-Note: \*\*\*\{t-test; p < 0.001\}
+Note: \*\*\*\{Welch's t-test; p < 0.001\}
 
 ### Observations
 
