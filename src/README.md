@@ -161,7 +161,7 @@ Note: \*\*\*\{Welch's t-test; p < 0.001\}
 
 ### Observations
 
-1. The models M<sub>1</sub> and M<sub>11</sub>, highlighted in bold, exceeded the baseline model M<sub>0</sub> in the dev and/or test dataset. We can observe that the better performing models both incorporated negative sampling into their workflow, while the baseline model did not. We can therefore conclude the importance of negative sampling in word embedding refinement.
+1. Model M<sub>1</sub>, highlighted in bold, outperformed the baseline model M<sub>0</sub> in the dev and test dataset. Similarly, model M<sub>11</sub> outperformed the baseline model M<sub>0</sub> in the dev dataset. We can observe that the better performing models both incorporated negative sampling into their workflow, while the baseline model did not. We can therefore conclude the importance of negative sampling in word embedding refinement.
 
 2. We repeated the runs to compute 40 overall test F1-scores for models M<sub>0</sub> and M<sub>1</sub> using `compare_combination.py`. Based on the variations of test F1-scores, we concluded, using the Welch's t-test, that the mean test F1-score of M<sub>1</sub> is significantly larger than the mean test F1-score of M<sub>0</sub>.
 
