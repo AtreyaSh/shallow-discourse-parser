@@ -7,7 +7,6 @@ Our modifications performed optimally in the word-embeddings component of the Fr
 * [Word-Embedding Models](#Word-Embedding-Models)
 * [Usage](#Usage)
 * [Results](#Results)
-* [Further Work](#Further-Work)
 
 ## Word-Embedding Models
 
